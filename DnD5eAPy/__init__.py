@@ -29,6 +29,17 @@
 #  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 #
 #
+#
+#  All rights reserved.
+#
+#  MIT License
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+#  documentation files (the “Software”), to deal in the Software without restriction, including without limitation the
+#  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+#  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+#
 import warnings
 from typing import Any, Dict
 
@@ -241,7 +252,7 @@ class AbilityScores(DnD5eAPIObj):
     """
     url_leaf: str = "/api/ability-scores"
 
-    def __init__(self, url_leaf: str = "/api/ability-scores", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `AbilityScores` instance.
 
 
@@ -262,7 +273,7 @@ class AbilityScore(AbilityScores):
     """
     url_leaf: str = "/api/ability-scores/*"
 
-    def __init__(self, url_leaf: str = "/api/ability-scores/cha", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/cha"), **kwargs):
         """Constructs the `AbilityScore` instance.
 
 
@@ -285,8 +296,31 @@ class Alignments(DnD5eAPIObj):
     """
     url_leaf: str = "/api/alignments"
 
-    def __init__(self, url_leaf="/api/alignments", **kwargs):
+    def __init__(self, url_leaf=url_leaf, **kwargs):
         """Constructs the `Alignments` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Alignment(Alignments):
+    """Child class of `Alignments` for handling an alignment out of the alignments api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target an alignment.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/alignments/*"
+
+    def __init__(self, url_leaf=url_leaf.replace("/*", "/chaotic-evil"), **kwargs):
+        """Constructs the `Alignment` instance.
 
 
         """
@@ -308,8 +342,31 @@ class Backgrounds(DnD5eAPIObj):
     """
     url_leaf: str = "/api/backgrounds"
 
-    def __init__(self, url_leaf="/api/backgrounds", **kwargs):
+    def __init__(self, url_leaf=url_leaf, **kwargs):
         """Constructs the `Backgrounds` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Background(Backgrounds):
+    """Child class of `Backgrounds` for handling a background out of the backgrounds api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a background.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/backgrounds/*"
+
+    def __init__(self, url_leaf=url_leaf.replace("/*", "/acolyte"), **kwargs):
+        """Constructs the `Background` instance.
 
 
         """
@@ -331,8 +388,32 @@ class Classes(DnD5eAPIObj):
     """
     url_leaf: str = "/api/classes"
 
-    def __init__(self, url_leaf="/api/classes", **kwargs):
-        """Constructs the `Backgrounds` instance.
+    def __init__(self, url_leaf=url_leaf, **kwargs):
+        """Constructs the `Classes` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Class(Classes):
+    """Child class of `Classes` for handling a class (oh god what did I just do with this class name!
+    I really hope case sensitivity pulls its weight here!) out of the classes api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a class.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/classes/*"
+
+    def __init__(self, url_leaf=url_leaf.replace("/*", "/barbarian"), **kwargs):
+        """Constructs the `Class` instance.
 
 
         """
@@ -354,8 +435,31 @@ class Conditions(DnD5eAPIObj):
     """
     url_leaf: str = "/api/conditions"
 
-    def __init__(self, url_leaf="/api/conditions", **kwargs):
+    def __init__(self, url_leaf=url_leaf, **kwargs):
         """Constructs the `Conditions` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Condition(Conditions):
+    """Child class of `Conditions` for handling a condition out of the conditions api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a condition.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/conditions/*"
+
+    def __init__(self, url_leaf=url_leaf.replace("/*", "/blinded"), **kwargs):
+        """Constructs the `Condition` instance.
 
 
         """
@@ -377,8 +481,31 @@ class DamageTypes(DnD5eAPIObj):
     """
     url_leaf: str = "/api/damage-types"
 
-    def __init__(self, url_leaf="/api/damage-types", **kwargs):
+    def __init__(self, url_leaf=url_leaf, **kwargs):
         """Constructs the `DamageTypes` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class DamageType(DamageTypes):
+    """Child class of `DamageTypes` for handling a damage-type out of the damage-types api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a damage-type.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/damage-types/*"
+
+    def __init__(self, url_leaf=url_leaf.replace("/*", "/acid"), **kwargs):
+        """Constructs the `DamageType` instance.
 
 
         """
@@ -400,8 +527,34 @@ class Equipment(DnD5eAPIObj):
     """
     url_leaf: str = "/api/equipment"
 
-    def __init__(self, url_leaf="/api/equipment", **kwargs):
+    def __init__(self, url_leaf=url_leaf, **kwargs):
         """Constructs the `Equipment` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class EquipmentItem(Equipment):
+    """Child class of `Equipment` for handling an equipment item (it really bugs me that
+    this is the first child class that forces me to break my naming convention of
+    just trimming an 's' off the end of the parent class name.) out of the
+    equipment api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target equipment api.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/equipment/*"
+
+    def __init__(self, url_leaf=url_leaf.replace("/*", "/abacus"), **kwargs):
+        """Constructs the `EquipmentItem` instance.
 
 
         """
@@ -423,8 +576,31 @@ class EquipmentCategories(DnD5eAPIObj):
     """
     url_leaf: str = "/api/equipment-categories"
 
-    def __init__(self, url_leaf="/api/equipment-categories", **kwargs):
+    def __init__(self, url_leaf=url_leaf, **kwargs):
         """Constructs the `EquipmentCategories` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class EquipmentCategory(EquipmentCategories):
+    """Child class of `EquipmentCategories` for handling an equipment-category out of the equipment-categories api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target an equipment-category.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/equipment-categories/*"
+
+    def __init__(self, url_leaf=url_leaf.replace("/*", "/adventuring-gear"), **kwargs):
+        """Constructs the `EquipmentCategory` instance.
 
 
         """
@@ -446,8 +622,31 @@ class Feats(DnD5eAPIObj):
     """
     url_leaf: str = "/api/feats"
 
-    def __init__(self, url_leaf: str = "/api/feats", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `Feats` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Feat(Feats):
+    """Child class of `Feats` for handling a feat out of the feats api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a feat.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/feats/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/grappler"), **kwargs):
+        """Constructs the `Feat` instance.
 
 
         """
@@ -477,6 +676,29 @@ class Features(DnD5eAPIObj):
         super().__init__(url_leaf, **kwargs)
 
 
+class Feature(Features):
+    """Child class of `Features` for handling a feature out of the features api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a feature.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/features/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/action-surge-1-use"), **kwargs):
+        """Constructs the `Feature` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
 class Languages(DnD5eAPIObj):
     """Child class of `DnD5eAPIObj` for handling data out of the languages api.
 
@@ -492,8 +714,31 @@ class Languages(DnD5eAPIObj):
     """
     url_leaf: str = "/api/languages"
 
-    def __init__(self, url_leaf: str = "/api/languages", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `Languages` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Language(Languages):
+    """Child class of `Languages` for handling a language out of the languages api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a language.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/languages/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/abyssal"), **kwargs):
+        """Constructs the `Language` instance.
 
 
         """
@@ -515,8 +760,31 @@ class MagicItems(DnD5eAPIObj):
     """
     url_leaf: str = "/api/magic-items"
 
-    def __init__(self, url_leaf: str = "/api/magic-items", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `MagicItems` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class MagicItem(MagicItems):
+    """Child class of `MagicItems` for handling data out of the magic-items api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target magic-items api.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/magic-items/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/adamantine-armor"), **kwargs):
+        """Constructs the `MagicItem` instance.
 
 
         """
@@ -538,8 +806,31 @@ class MagicSchools(DnD5eAPIObj):
     """
     url_leaf: str = "/api/magic-schools"
 
-    def __init__(self, url_leaf: str = "/api/magic-schools", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `MagicSchools` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class MagicSchool(MagicSchools):
+    """Child class of `MagicSchools` for handling a magic-school out of the magic-schools api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a magic-school.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/magic-schools/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/abjuration"), **kwargs):
+        """Constructs the `MagicSchool` instance.
 
 
         """
@@ -561,8 +852,31 @@ class Monsters(DnD5eAPIObj):
     """
     url_leaf: str = "/api/monsters"
 
-    def __init__(self, url_leaf: str = "/api/monsters", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `Monsters` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Monster(Monsters):
+    """Child class of `Monsters` for handling a monster out of the monsters api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a monster.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/monsters/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/aboleth"), **kwargs):
+        """Constructs the `Monster` instance.
 
 
         """
@@ -584,8 +898,31 @@ class Proficiencies(DnD5eAPIObj):
     """
     url_leaf: str = "/api/proficiencies"
 
-    def __init__(self, url_leaf: str = "/api/proficiencies", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `Proficiencies` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Proficiency(Proficiencies):
+    """Child class of `Proficiencies` for handling a proficiency out of the proficiencies api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target proficiency.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/proficiencies/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/alchemists-supplies"), **kwargs):
+        """Constructs the `Proficiency` instance.
 
 
         """
@@ -607,8 +944,31 @@ class Races(DnD5eAPIObj):
     """
     url_leaf: str = "/api/races"
 
-    def __init__(self, url_leaf: str = "/api/races", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `Races` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Race(Races):
+    """Child class of `Races` for handling a race out of the races api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a race.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/races/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/dragonborn"), **kwargs):
+        """Constructs the `Race` instance.
 
 
         """
@@ -630,8 +990,31 @@ class RuleSections(DnD5eAPIObj):
     """
     url_leaf: str = "/api/rule-sections"
 
-    def __init__(self, url_leaf: str = "/api/rule-sections", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `RuleSections` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class RuleSection(RuleSections):
+    """Child class of `RuleSections` for handling a rule-section out of the rule-sections api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a rule-section.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/rule-sections/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/ability-checks"), **kwargs):
+        """Constructs the `RuleSection` instance.
 
 
         """
@@ -653,8 +1036,31 @@ class Rules(DnD5eAPIObj):
     """
     url_leaf: str = "/api/rules"
 
-    def __init__(self, url_leaf: str = "/api/rules", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `Rules` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Rule(Rules):
+    """Child class of `Rules` for handling a rule out of the rules api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target rules api.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/rules/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/adventuring"), **kwargs):
+        """Constructs the `Rule` instance.
 
 
         """
@@ -676,8 +1082,31 @@ class Skills(DnD5eAPIObj):
     """
     url_leaf: str = "/api/skills"
 
-    def __init__(self, url_leaf: str = "/api/skills", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `Skills` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Skill(Skills):
+    """Child class of `Skills` for handling a skill out of the skills api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a skill.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/skills/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/acrobatics"), **kwargs):
+        """Constructs the `Skill` instance.
 
 
         """
@@ -699,8 +1128,31 @@ class Spells(DnD5eAPIObj):
     """
     url_leaf: str = "/api/spells"
 
-    def __init__(self, url_leaf: str = "/api/spells", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `Spells` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Spell(Spells):
+    """Child class of `Spells` for handling a spell out of the spells api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a spell.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/spells/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/acid-arrow"), **kwargs):
+        """Constructs the `Spell` instance.
 
 
         """
@@ -722,8 +1174,31 @@ class Subclasses(DnD5eAPIObj):
     """
     url_leaf: str = "/api/subclasses"
 
-    def __init__(self, url_leaf: str = "/api/subclasses", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `Subclasses` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Subclass(Subclasses):
+    """Child class of `Subclasses` for handling a subclass out of the subclasses api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a subclass.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/subclasses/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/berserker"), **kwargs):
+        """Constructs the `Subclass` instance.
 
 
         """
@@ -745,8 +1220,31 @@ class Subraces(DnD5eAPIObj):
     """
     url_leaf: str = "/api/subraces"
 
-    def __init__(self, url_leaf: str = "/api/subraces", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `Subraces` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Subrace(Subraces):
+    """Child class of `Subraces` for handling a subrace out of the subraces api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a subrace.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/subraces/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/high-elf"), **kwargs):
+        """Constructs the `Subrace` instance.
 
 
         """
@@ -768,8 +1266,31 @@ class Traits(DnD5eAPIObj):
     """
     url_leaf: str = "/api/traits"
 
-    def __init__(self, url_leaf: str = "/api/traits", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `Traits` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class Trait(Traits):
+    """Child class of `Traits` for handling a trait out of the traits api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a trait.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/traits/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/artificers-lore"), **kwargs):
+        """Constructs the `Trait` instance.
 
 
         """
@@ -791,8 +1312,31 @@ class WeaponProperties(DnD5eAPIObj):
     """
     url_leaf: str = "/api/weapon-properties"
 
-    def __init__(self, url_leaf: str = "/api/weapon-properties", **kwargs):
+    def __init__(self, url_leaf: str = url_leaf, **kwargs):
         """Constructs the `WeaponProperties` instance.
+
+
+        """
+        super().__init__(url_leaf, **kwargs)
+
+
+class WeaponProperty(WeaponProperties):
+    """Child class of `WeaponProperties` for handling a weapon-property out of the weapon-properties api.
+
+    Parameters
+    ----------
+    url_leaf: str, optional
+        Overrides the parent's `url_leaf` to target a weapon-property.
+
+    **kwargs: optional
+        Keyword arguments to pass to `super().__init__()`
+
+
+    """
+    url_leaf: str = "/api/weapon-properties/*"
+
+    def __init__(self, url_leaf: str = url_leaf.replace("/*", "/ammunition"), **kwargs):
+        """Constructs the `WeaponProperty` instance.
 
 
         """
