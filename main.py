@@ -29,6 +29,29 @@
 #  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 #
 #
+#
+#  All rights reserved.
+#
+#  MIT License
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+#  documentation files (the “Software”), to deal in the Software without restriction, including without limitation the
+#  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+#  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+#
+import sys
+#
+#  All rights reserved.
+#
+#  MIT License
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+#  documentation files (the “Software”), to deal in the Software without restriction, including without limitation the
+#  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+#  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+#
 import tkinter as tk
 from collections.abc import Iterable
 from functools import partial
@@ -43,6 +66,12 @@ class BigScreen:
         self.current_dnd = self.dnds[0]
 
         self.root = tk.Tk()
+        self.menu_bar = tk.Menu(self.root)
+        self.menu_bar.add_command(label="Exit (F5)", command=self.root.destroy)
+        self.menu_bar.add_command(label="Toggle Fullscreen (Esc)", command=self.full_screen_toggle)
+        self.menu_bar.add_command(label="Back", command=self.go_back)
+        self.obj_cascade = self.generate_obj_cascade()
+        self.root.config(menu=self.menu_bar)
         self.root.rowconfigure(0, weight=1)
         self.root.columnconfigure(0, weight=1)
         self.screenwidth, self.screenheight = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
@@ -51,30 +80,22 @@ class BigScreen:
         self.orig_x = self.canvas.xview()[0]
         self.orig_y = self.canvas.yview()[0]
         self.butts = self.generate_butts()
-        self.back_butt = tk.Button(
-            self.canvas,
-            text="Back",
-            command=self.go_back,
-            name="back"
-        )
-
-        self.ex_butt = tk.Button(
-            self.canvas,
-            text="Exit",
-            command=self.root.destroy,
-            name="exit"
-        )
-        self.canvas.create_window(0, 0, anchor="nw", window=self.ex_butt)
-        self.canvas.create_window(50, 0, anchor="nw", window=self.back_butt)
         self.place_buttons_and_text()
-        self.makescroll()
+        self.make_scroll()
         self.canvas.bind_all("<MouseWheel>", self._on_mousewheel)
-        self.root.bind("<Escape>", self.closer)
-        self.root.wm_attributes("-fullscreen", 1)
-        self.root.wm_attributes("-top", 1)
+        self.root.bind("<F5>", self.closer)
+        self.root.bind("<BackSpace>", self.go_back)
+        self.fullscreen = True
+        self.root.wm_attributes("-fullscreen", self.fullscreen)
+        self.root.bind("<Escape>", self.full_screen_toggle)
+        self.root.wm_attributes("-top", self.fullscreen)
 
-    def go_back(self):
-        self.dnds.insert(0, self.dnds.pop(-1))
+    def full_screen_toggle(self, _=None):
+        self.fullscreen = not self.fullscreen
+        self.root.wm_attributes("-fullscreen", self.fullscreen)
+        self.root.wm_attributes("-top", self.fullscreen)
+
+    def clean_up(self):
         self.current_dnd = self.dnds[-1]
         [b.destroy() for b in self.butts]
         self.canvas.delete("DeleteMe")
@@ -82,6 +103,10 @@ class BigScreen:
         self.place_buttons_and_text()
         self.canvas.xview_moveto(self.orig_x)
         self.canvas.yview_moveto(self.orig_y)
+
+    def go_back(self, _=None):
+        self.dnds.insert(0, self.dnds.pop(-1))
+        self.clean_up()
 
     def _on_mousewheel(self, event):
         self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
@@ -92,21 +117,28 @@ class BigScreen:
             self.canvas.create_window(10, y, anchor="nw", window=butt)
             self.canvas.create_text(
                 self.screenwidth // 6, y, anchor="nw",
-                text="\n___________________________________\n".join(
+                text="\n__\n".join(
                     [
-                        f"{'    |   '.join([f'{x}' for x in i]) if isinstance(i, Iterable) else i}    |" for i in
-                        self.current_dnd[
-                            self.current_dnd.df['url'] == butt._name
-                            ].to_dict().items()
+                        '\n____\n'.join(
+                            [
+                                '\n______\n'.join(
+                                    [
+                                        y for y in x
+                                    ]
+                                ) if isinstance(x, Iterable) and not isinstance(x, str) else x for x in i
+                            ]
+                        ) if isinstance(i, Iterable) else i for i in self.current_dnd[
+                        self.current_dnd.df['url'] == butt._name
+                        ].to_dict().items()
                     ]
                 ),
-                width=2000,
+                width=self.screenwidth // 2,
                 justify=tk.CENTER,
                 tags="DeleteMe",
             )
             y += self.screenheight // 9
 
-    def makescroll(self):
+    def make_scroll(self):
         v = tk.Scrollbar(self.root, orient=tk.VERTICAL, command=self.canvas.yview)
         v.grid(row=0, column=1, sticky=tk.NS)
         self.canvas.config(yscrollcommand=v.set)
@@ -114,22 +146,24 @@ class BigScreen:
         h.grid(row=1, column=0, sticky=tk.EW)
         self.canvas.config(xscrollcommand=h.set)
 
-    def closer(self, ev):
+    def closer(self, _):
         self.root.destroy()
 
     def button_click(self, j):
-        const = self.leaf_constructors.get(j, self.leaf_constructors.get("/".join(j.split("/")[:-1]) + "/*"))
-        if const not in self.dnds:
-            self.dnds.append(const(j))
+        j_lst = j.split("/")
+        backup_j = "/".join(j_lst[:-1]) + "/*"
+        const = self.leaf_constructors.get(j, self.leaf_constructors.get(backup_j))
+        search = const.url_leaf.replace("/*", f"/{j_lst[-1]}")
+        search_result = [i for i, dnd in enumerate(self.dnds) if dnd.url_leaf == search]
+        if not search_result:
+            dnd = const(j)
+            self.dnds.append(dnd)
+            self.obj_cascade.destroy()
+            self.menu_bar.delete(tk.END)
+            self.generate_obj_cascade()
         else:
-            self.dnds.append(self.dnds.pop(self.dnds.index()))
-        self.current_dnd = self.dnds[-1]
-        [b.destroy() for b in self.butts]
-        self.canvas.delete("DeleteMe")
-        self.butts = self.generate_butts()
-        self.place_buttons_and_text()
-        self.canvas.xview_moveto(self.orig_x)
-        self.canvas.yview_moveto(self.orig_y)
+            self.dnds.append(self.dnds.pop(search_result[0]))
+        self.clean_up()
 
     def generate_butts(self):
         return [
@@ -140,6 +174,14 @@ class BigScreen:
                 name=f"{u}",
             ) for i, u in zip(self.current_dnd.df.index, self.current_dnd["url"])
         ]
+
+    def generate_obj_cascade(self):
+        self.obj_cascade = tk.Menu(self.menu_bar, tearoff=0)
+        [self.obj_cascade.add_command(
+            label=f"{dnd} | Size kB: {(sys.getsizeof(dnd) + sys.getsizeof(dnd.df) + sys.getsizeof(dnd.json) + sys.getsizeof(dnd.response)) / 1024}"
+        ) for dnd in self.dnds[::-1]]
+        self.menu_bar.add_cascade(label=f"DnD Objects Loaded: {len(self.dnds)}", menu=self.obj_cascade)
+        return self.obj_cascade
 
 
 if __name__ == "__main__":

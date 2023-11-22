@@ -40,6 +40,28 @@
 #  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
 #
 #
+#
+#  All rights reserved.
+#
+#  MIT License
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+#  documentation files (the “Software”), to deal in the Software without restriction, including without limitation the
+#  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+#  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+#
+#
+#  All rights reserved.
+#
+#  MIT License
+#
+#  Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+#  documentation files (the “Software”), to deal in the Software without restriction, including without limitation the
+#  rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
+#  and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+#
+#
 import warnings
 from typing import Any, Dict
 
@@ -167,6 +189,14 @@ class DnD5eAPIObj:
         if status_code == 200:
             return self.response.json()
         return {"status_code": status_code}
+
+    def __eq__(self, other):
+        return self.df.__eq__(other)
+
+    def __bool__(self):
+        if self.df.columns[0] == "status_code":
+            return False
+        return self.df.__bool__()
 
     def __str__(self) -> str:
         """Returns `str(json)`.
