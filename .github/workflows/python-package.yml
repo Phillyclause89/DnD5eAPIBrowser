@@ -40,9 +40,17 @@ jobs:
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       -
-        name: Analysing the code with pylint
+        name: Analysing DnD5eAPy with pylint
         run: |
-          pylint $(git ls-files '*.py') --exit-zero
+          pylint $('DnD5eAPy') --exit-zero
+      -
+        name: Analysing Shitty Browser App with pylint
+        run: |
+          pylint $('main.py') --exit-zero
+      -
+        name: Analysing Tests with pylint
+        run: |
+          pylint $('testDnD5eAPy.py') --exit-zero
       -
         name: Test with pytest
         run: |
