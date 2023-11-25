@@ -1118,14 +1118,14 @@ class TestDnD5eAPIObj(TestCase):
 
     def test_children(self) -> None:
         df_urls: NDArray[str] = self.dnd["url"].values
-        cls_urls: Dict[str:Type[DnD5eAPIObj]] = {
+        cls_urls: Dict[str:Type[DnD5eAPy.DnD5eAPIObj]] = {
             subclass_constructor.url_leaf: subclass_constructor for subclass_constructor in
             self.constructor.__subclasses__()
         }
         df_url: str
         for df_url in df_urls:
             self.assertIn(df_url, cls_urls)
-            subclass: DnD5eAPIObj = cls_urls[df_url]()
+            subclass: DnD5eAPy.DnD5eAPIObj = cls_urls[df_url]()
             self.assertIsInstance(subclass, self.constructor)
 
     def test_create_instances_from_urls(self) -> None:
