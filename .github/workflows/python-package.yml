@@ -42,7 +42,7 @@ jobs:
       -
         name: Analysing DnD5eAPy with pylint
         run: |
-          pylint $('DnD5eAPy') --exit-zero
+          pylint --recursive=y $('DnD5eAPy') --exit-zero
       -
         name: Analysing Shitty Browser App with pylint
         run: |
