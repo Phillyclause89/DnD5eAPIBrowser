@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [ "3.7","3.8","3.9", "3.10", "3.11" ]
+        python-version: [ "3.7","3.8","3.9", "3.10" ] #3.11 Taking too long to install python
 
     steps:
       -
@@ -42,15 +42,15 @@ jobs:
       -
         name: Analysing DnD5eAPy with pylint
         run: |
-          pylint $('DnD5eAPy') --exit-zero
+          pylint DnD5eAPy --exit-zero
       -
         name: Analysing Shitty Browser App with pylint
         run: |
-          pylint $('main.py') --exit-zero
+          pylint main.py --exit-zero
       -
         name: Analysing Tests with pylint
         run: |
-          pylint $('testDnD5eAPy.py') --exit-zero
+          pylint testDnD5eAPy.py --exit-zero
       -
         name: Test with pytest
         run: |
