@@ -17,9 +17,9 @@
 #  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 #  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH
 #  THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+"""EquipmentCategories
 
-from typing import Any
-
+"""
 from dnd5eapy import core
 
 
@@ -38,7 +38,7 @@ class EquipmentCategories(core.DnD5eAPIObj):
     """
     url_leaf: str = "/api/equipment-categories"
 
-    def __init__(self, url_leaf: str = url_leaf, **kwargs: Any) -> None:
+    def __init__(self, url_leaf: str = url_leaf, **kwargs) -> None:
         """Constructs the `EquipmentCategories` instance.
 
 
