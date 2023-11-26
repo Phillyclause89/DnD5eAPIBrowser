@@ -20,6 +20,9 @@
 #
 #  All rights reserved.
 #
+"""Shitty Browser App
+
+"""
 import io
 import random
 import sys
