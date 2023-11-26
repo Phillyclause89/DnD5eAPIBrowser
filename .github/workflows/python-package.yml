@@ -42,7 +42,7 @@ jobs:
       -
         name: Analysing dnd5eapy with pylint
         run: |
-          pylint DnD5eAPy --exit-zero
+          pylint dnd5eapy --exit-zero
       -
         name: Analysing Shitty Browser App with pylint
         run: |
@@ -50,9 +50,9 @@ jobs:
       -
         name: Analysing Tests with pylint
         run: |
-          pylint testDnD5eAPy.py --exit-zero
+          pylint test_dnd5eapy.py --exit-zero
       -
         name: Test with pytest
         run: |
-          pytest testDnD5eAPy.py --doctest-modules --junitxml=junit/test-results.xml
+          pytest test_dnd5eapy.py --doctest-modules --junitxml=junit/test-results.xml
       
