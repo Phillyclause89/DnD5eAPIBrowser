@@ -1,0 +1,4 @@
+
+Kpython:S1940ÿ"-Use the opposite operator ("not in") instead.(˜¡ä×ûÿÿÿÿ
+Rpython:S2190ß"4Add a way to break out of this function's recursion.(ç¯çøÿÿÿÿ
+gpython:S1226ß"IIntroduce a new variable or use its initial value before reassigning 'c'.(ç¯çøÿÿÿÿ

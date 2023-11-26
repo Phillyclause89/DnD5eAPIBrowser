@@ -14,4 +14,7 @@
     <option name="format" value="NUMPY" />
     <option name="myDocStringFormat" value="NumPy" />
   </component>
+  <component name="SonarLintModuleSettings">
+    <option name="uniqueId" value="9a21cf0f-022b-4a95-999a-e5155b2514d4" />
+  </component>
 </module>

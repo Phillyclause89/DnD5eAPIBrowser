@@ -38,8 +38,10 @@ from PIL.ImageTk import PhotoImage
 from pandas import DataFrame, Series
 from pandas.core.generic import NDFrame
 
-import DnD5eAPy as DnD
-from DnD5eAPy import DnD5eAPIObj
+import dnd5eapy as DnD
+import dnd5eapy.core
+import dnd5eapy.utils
+from dnd5eapy import DnD5eAPIObj
 
 
 class BigScreen:
@@ -70,8 +72,8 @@ class BigScreen:
         self.loading = self.loading_update(self.current_load_message)
         random.seed()
         self.images = {}
-        self.leaf_constructors = DnD.get_leaf_constructor_map()
-        self.dnds = [DnD.DnD5eAPIObj()]
+        self.leaf_constructors = dnd5eapy.utils.get_leaf_constructor_map()
+        self.dnds = [dnd5eapy.base.DnD5eAPIObj()]
         self.current_dnd = self.dnds[0]
         self.root.title(self.current_load_message)
         self.screenwidth, self.screenheight = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
@@ -184,7 +186,7 @@ class BigScreen:
     def update_page(self) -> None:
         self.current_dnd = self.dnds[-1]
         self.loading_update(f"Images for {self.current_dnd}")
-        self.dnds[-1]["images"] = self.dnds[-1]["images"] if "images" in self.dnds[-1].df.columns else self.dnds[-1][
+        self.dnds[-1]["images"] = self.dnds[-1]["images"] if "images" in self.dnds[-1].dframe.columns else self.dnds[-1][
             "url"].apply(self.get_images)
         self.loading_update(f"Buttons for {self.current_dnd}")
         self.butts = self.generate_butts()
@@ -193,7 +195,7 @@ class BigScreen:
         self.generate_obj_cascade()
         self.menu_bar.entryconfigure(tk.END, label=self.cascade_label, font=self.font)
         self.root.update()
-        print(self.current_dnd.df[[c for c in self.current_dnd.df.columns if not c == "images"]].to_string())
+        print(self.current_dnd.dframe[[c for c in self.current_dnd.dframe.columns if not c == "images"]].to_string())
 
     def clear_page(self) -> None:
         self.loading_update("Cleaning up current page...")
@@ -335,7 +337,7 @@ class BigScreen:
 
     def generate_butts(self) -> List[tk.Button]:
         butts = []
-        for i, u in zip(self.current_dnd.df.index, self.current_dnd["url"]):
+        for i, u in zip(self.current_dnd.dframe.index, self.current_dnd["url"]):
             self.root.update()
             butts.append(tk.Button(
                 self.canvas,
@@ -359,7 +361,7 @@ class BigScreen:
         size_total = 0
         for i, dnd in list(enumerate(self.dnds))[::-1]:
             self.root.update()
-            size = ((sys.getsizeof(dnd) + sys.getsizeof(dnd.df) + sys.getsizeof(dnd.json) + sys.getsizeof(
+            size = ((sys.getsizeof(dnd) + sys.getsizeof(dnd.dframe) + sys.getsizeof(dnd.json) + sys.getsizeof(
                 dnd.response)) / 1024)
             size_total += size
             self.obj_cascade.add_command(
