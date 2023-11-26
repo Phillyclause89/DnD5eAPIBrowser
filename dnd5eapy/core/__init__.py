@@ -27,7 +27,7 @@
 from _warnings import warn
 
 try:
-    from typing import Any, Dict, Iterator, List, Self, Set, Type, Union
+    from typing import Any, Dict, Iterable, Iterator, List, Self, Set, Type, Union
 except ImportError as i_error:
     warn(f"{i_error}", ImportWarning)
     from typing_extensions import Self
@@ -221,7 +221,7 @@ class DnD5eAPIObj:
         return self.__repr__().replace(" at ", f" from {self.response.url} at ")
 
     def __get_df__(self) -> pd.DataFrame:
-        """gets the `dframe` from `self.json`.
+        """gets the `dframe` from `json`.
             If the keys `'count'` and `'results'` are in `json.keys()` then
             the initial DataFrame will be `dframe = pd.DataFrame(json.get('results'))`,
             otherwise `dframe = pd.DataFrame([self.json])` will be initialized.
@@ -391,7 +391,7 @@ class DnD5eAPIObj:
         return self.dframe.__pow__(power, modulo)
 
 
-def get_leaf_constructor_map() -> Dict[str, Type[DnD5eAPIObj]]:
+def get_leaf_constructor_map(root_class: Type[DnD5eAPIObj] = DnD5eAPIObj) -> Dict[str, Type[Union[DnD5eAPIObj, Any]]]:
     """Gets a dictionary of all dnd5eapy class constructors
     mapped to their default url_leaf attribute.
 
@@ -400,25 +400,24 @@ def get_leaf_constructor_map() -> Dict[str, Type[DnD5eAPIObj]]:
     Dict[str, Type[DnD5eAPIObj]]
     """
 
-    def all_subclasses(root_class: Type[DnD5eAPIObj]) -> Set[Type[DnD5eAPIObj]]:
+    def all_subclasses(cls: Type[DnD5eAPIObj]) -> Set[Union[Type[DnD5eAPIObj], Any]]:
         """Recursively search for all subclasses
 
         Parameters
         ----------
-        root_class : type
+        cls : Type[DnD5eAPIObj]
 
         Returns
         -------
         Set[Type[DnD5eAPIObj]]
         """
-        subclasses: Set[Type[DnD5eAPIObj]] = set(root_class.__subclasses__())
         subclass: Type[DnD5eAPIObj]
+        subclasses: Set[Type[Union[DnD5eAPIObj, Any]]] = set(cls.__subclasses__())
         for subclass in subclasses.copy():
-            subclasses.update(all_subclasses(subclass))
+            subclasses = subclasses.union(all_subclasses(subclass))
         return subclasses
 
-    cls: Type[DnD5eAPIObj]
     return {
         **{DnD5eAPIObj.url_leaf: DnD5eAPIObj},
-        **{cls.url_leaf: cls for cls in all_subclasses(DnD5eAPIObj)}
+        **{cls.url_leaf: cls for cls in all_subclasses(root_class)}
     }

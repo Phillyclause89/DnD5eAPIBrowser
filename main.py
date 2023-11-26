@@ -33,18 +33,17 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, Type, Union
 import pandas as pd
 import requests
 from PIL import Image, ImageTk, JpegImagePlugin, PngImagePlugin
-from PIL.Image import Image
-from PIL.ImageTk import PhotoImage
 from pandas import DataFrame, Series
 from pandas.core.generic import NDFrame
 
-import dnd5eapy as DnD
-import dnd5eapy.core
-import dnd5eapy.utils
+import dnd5eapy as dnd
 from dnd5eapy import DnD5eAPIObj
 
 
 class BigScreen:
+    """Shitty Browser App for figuring out what's in the api.
+
+    """
     title: str
     fullscreen: bool
     butts: Union[List[Button], Any]
@@ -68,16 +67,18 @@ class BigScreen:
     def __init__(self) -> None:
         self.title = "Shitty D&D API Browser"
         self.current_load_message = f"Initializing {self.title}"
+        self.obj_cascade = None
         self.root = tk.Tk()
+        self.root.config(background='black')
         self.loading = self.loading_update(self.current_load_message)
         random.seed()
         self.images = {}
-        self.leaf_constructors = dnd5eapy.utils.get_leaf_constructor_map()
-        self.dnds = [dnd5eapy.base.DnD5eAPIObj()]
+        self.leaf_constructors = dnd.get_leaf_constructor_map()
+        self.dnds = [dnd.DnD5eAPIObj()]
         self.current_dnd = self.dnds[0]
         self.root.title(self.current_load_message)
         self.screenwidth, self.screenheight = self.root.winfo_screenwidth(), self.root.winfo_screenheight()
-        self.root.geometry(f"{3 * (self.screenwidth // 5)}x{self.screenheight - 100}")
+        self.root.geometry(f"{3 * (self.screenwidth // 5)}x{self.screenheight - 250}")
 
         self.current_load_message = f"Rolling Initial Font for {self.title}"
         self.loading_update(self.current_load_message)
@@ -93,7 +94,7 @@ class BigScreen:
                                   command=lambda: self.loading_guard(self.roll_font_click))
         self.menu_bar.add_command(label="Back (BackSpace)", font=self.font,
                                   command=lambda: self.loading_guard(self.go_back))
-        self.obj_cascade = None
+
         self.obj_cascade, self.cascade_label = self.generate_obj_cascade()
         self.menu_bar.add_cascade(
             label=self.cascade_label, menu=self.obj_cascade
@@ -104,7 +105,12 @@ class BigScreen:
         self.loading_update(self.current_load_message)
         self.root.rowconfigure(0, weight=1)
         self.root.columnconfigure(0, weight=1)
-        self.canvas = tk.Canvas(self.root, scrollregion=f"0 0 {self.screenwidth * 2} {self.screenheight * 80}")
+        # noinspection PyTypeChecker,PydanticTypeChecker
+        self.canvas = tk.Canvas(
+            self.root,
+            scrollregion=f"0 0 {self.screenwidth * 2} {self.screenheight * 100}",
+            background="#D4F1F4"
+        )
         self.canvas.grid(row=0, column=0, sticky=tk.NSEW)
         self.orig_x = self.canvas.xview()[0]
         self.orig_y = self.canvas.yview()[0]
@@ -165,7 +171,7 @@ class BigScreen:
         Tuple[Tuple[str, int], str]
         """
         self.font_family = random.choice(list(font.families()))
-        self.font = (self.font_family, 11)
+        self.font = (self.font_family, random.randint(8, 15))
         self.root.option_add("*Font", self.font)
         return self.font, self.font_family
 
@@ -185,17 +191,19 @@ class BigScreen:
 
     def update_page(self) -> None:
         self.current_dnd = self.dnds[-1]
-        self.loading_update(f"Images for {self.current_dnd}")
-        self.dnds[-1]["images"] = self.dnds[-1]["images"] if "images" in self.dnds[-1].dframe.columns else self.dnds[-1][
-            "url"].apply(self.get_images)
-        self.loading_update(f"Buttons for {self.current_dnd}")
+        self.loading_update(f"Fetching images for {self.current_dnd}")
+        self.dnds[-1]["images"] = self.dnds[-1]["images"] if "images" in self.dnds[
+            -1
+        ].dframe.columns else self.dnds[-1]["url"].apply(self.get_images)
+        self.loading_update(f"Generating buttons for {self.current_dnd}")
         self.butts = self.generate_butts()
         self.place_buttons_and_text()
         self.loading_update("Updating cascade list")
         self.generate_obj_cascade()
         self.menu_bar.entryconfigure(tk.END, label=self.cascade_label, font=self.font)
+        self.root.title(self.title)
+        self.current_load_message = ""
         self.root.update()
-        print(self.current_dnd.dframe[[c for c in self.current_dnd.dframe.columns if not c == "images"]].to_string())
 
     def clear_page(self) -> None:
         self.loading_update("Cleaning up current page...")
@@ -207,7 +215,7 @@ class BigScreen:
         self.root.update()
 
     def go_back(self, _: Union[Any, None] = None) -> None:
-        self.loading_update(f"{self.dnds[-2]}")
+        self.loading_update(f"Going back to {self.dnds[-2]}")
         self.clear_page()
         self.dnds.insert(0, self.dnds.pop(-1))
         self.update_page()
@@ -217,12 +225,13 @@ class BigScreen:
         self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def place_buttons_and_text(self) -> None:
-        """
+        """place butts
 
         """
         y: int = self.screenheight // 8
         butt: Union[Button, Any]
         for butt in self.butts:
+            self.loading_update(f"Building {butt}")
             butt_row_items: Union[Union[Series, DataFrame, None, NDFrame], Any]
             butt_row_items = self.current_dnd[self.current_dnd['url'] == butt._name]
             self.canvas.create_window(self.screenwidth // 12, y, anchor="n", window=butt)
@@ -239,6 +248,7 @@ class BigScreen:
             image: str = random.choice(butt_row_items["images"].values[0])
             size: Tuple[int, int] = (int(self.screenwidth // 8), self.screenheight // 5)
             if image not in self.images:
+                self.loading_update(f"Building image from {image} for {butt}")
                 io_image: BytesIO = io.BytesIO(requests.get(image).content)
                 pil_img: Image = Image.open(io_image)
                 if pil_img.size[0] > pil_img.size[1]:
@@ -252,7 +262,7 @@ class BigScreen:
                 pil_img.seek(0)
                 pil_img.save(io_image, format='PNG')
                 pil_img.seek(0)
-                tk_image: PhotoImage = ImageTk.PhotoImage(pil_img, size=size)
+                tk_image: Image = ImageTk.PhotoImage(pil_img, size=size)
             else:
                 tk_image = self.images[image]
             butt.config(image=tk_image, width=size[0] - 10, height=size[1] - 10, background="#0000FF")
@@ -261,6 +271,7 @@ class BigScreen:
                 lambda e, j=butt._name: self.loading_guard(self.button_click, j, e)
             ))
             y += self.screenheight // 4
+            self.loading_update(f"Finished {butt}")
             self.root.update()
 
     def make_scroll(self) -> None:
@@ -274,23 +285,26 @@ class BigScreen:
     def closer(self, _: Any) -> None:
         self.root.destroy()
 
-    def button_click(self, url: str) -> None:
+    def button_click(self, url: str, _=None) -> None:
         """
 
         Parameters
-        ----------
-        url
+        ----------        
+        url : str
+        _ : Any
+        
         """
-        self.loading_update(f"{url}")
+        self.loading_update(f"Loading {url}")
         self.clear_page()
         url_lst: List[str] = url.split("/")
         backup_j: str = "/".join(url_lst[:-1]) + "/*"
         const: Type[DnD5eAPIObj] = self.leaf_constructors.get(url, self.leaf_constructors.get(backup_j))
         search: str = const.url_leaf.replace("/*", f"/{url_lst[-1]}")
-        search_result = [i for i, dnd in enumerate(self.dnds) if dnd.url_leaf == search]
+        search_result = [i for i, dnd_obj in enumerate(self.dnds) if dnd_obj.url_leaf == search]
         if not search_result:
-            dnd = const(url)
-            self.dnds.append(dnd)
+            self.loading_update(f"Initializing new {const} for {url}")
+            dnd_obj = const(url)
+            self.dnds.append(dnd_obj)
         else:
             self.dnds.append(self.dnds.pop(search_result[0]))
         self.update_page()
@@ -298,41 +312,50 @@ class BigScreen:
 
     @staticmethod
     def generate_text(butt_row_items: pd.DataFrame) -> str:
-        """
+        """Generates a text representation of the `butt_row_items` DataFrame.
 
         Parameters
         ----------
-        butt_row_items : object
+        butt_row_items : pd.DataFrame
+            The DataFrame to generate the text representation for.
 
         Returns
         -------
+        str
+            The text representation of the `butt_row_items` DataFrame.
 
+        Notes
+        -----
+        The text representation includes the column names and values for all columns except the `"images"` column.
         """
-        s: str = ""
-        filtered: Union[Union[Series, DataFrame, None, NDFrame], Any] = butt_row_items[
-            [c for c in butt_row_items.columns if not c == "images"]
-        ]
-        item: Tuple[Any, Any]
-        for item in filtered.to_dict().items():
-            if isinstance(item, Iterable):
-                column: Series
-                for column in item:
-                    if isinstance(column, Iterable) and not isinstance(column, str):
-                        for index in column:
-                            s += f"Index: {index}\n"
-                            value = column[index]
-                            if isinstance(value, Iterable) and not isinstance(value, str):
-                                s += f"Values:\n"
-                                for i, sub_value in enumerate(value):
-                                    s += f"{sub_value}: {value[sub_value]}\n" if isinstance(value,
-                                                                                            dict) else f"{value[i]}\n"
-                            else:
-                                s += f"Value:\n{value}\n"
-                        s += "\n"
-                    else:
-                        s += f"Column: {column}\n"
-            else:
-                s += f"{item}\n"
+
+        def get_sub_sub_value(_value: Union[Iterable, List, Dict], _sub_value: Union[str, int], _i: int):
+            """
+
+            Parameters
+            ----------
+            _value
+            _sub_value
+            _i
+
+            Returns
+            -------
+
+            """
+            return f"{_sub_value}: {_value[_sub_value]}\n" if isinstance(_value, dict) else f"{_value[_i]}\n"
+
+        s = ""
+        columns_to_include = [c for c in butt_row_items.columns if c != "images"]
+        for column in columns_to_include:
+            s += f"Column: {column}\n"
+            for index, value in butt_row_items[column].items():
+                if isinstance(value, Iterable) and not isinstance(value, str):
+                    for i, sub_value in enumerate(value):
+                        s += get_sub_sub_value(value, sub_value, i)
+                else:
+                    s += f"Value: {value}\n"
+                s += f"Index: {index}\n"
+            s += "\n"
         return s
 
     def generate_butts(self) -> List[tk.Button]:
@@ -359,13 +382,14 @@ class BigScreen:
         if not self.obj_cascade:
             self.obj_cascade = tk.Menu(self.menu_bar, tearoff=0)
         size_total = 0
-        for i, dnd in list(enumerate(self.dnds))[::-1]:
+        for i, dnd_obj in list(enumerate(self.dnds))[::-1]:
             self.root.update()
-            size = ((sys.getsizeof(dnd) + sys.getsizeof(dnd.dframe) + sys.getsizeof(dnd.json) + sys.getsizeof(
-                dnd.response)) / 1024)
+            size = ((sys.getsizeof(dnd_obj) + sys.getsizeof(
+                dnd_obj.dframe) + sys.getsizeof(
+                dnd_obj.response)) / 1024)
             size_total += size
             self.obj_cascade.add_command(
-                label=f"{dnd} | Size: {size} (kB)",
+                label=f"{dnd_obj} | Size: {size} (kB)",
                 command=lambda ii=i: self.select_loaded(ii),
                 font=self.font
             )
@@ -373,7 +397,7 @@ class BigScreen:
         return self.obj_cascade, self.cascade_label
 
     def select_loaded(self, i):
-        self.loading_update(f"{self.dnds[i]}")
+        self.loading_update(f"Loading {self.dnds[i]}")
         self.clear_page()
         self.dnds.append(self.dnds.pop(i))
         self.update_page()
@@ -386,6 +410,7 @@ class BigScreen:
         if url_leaf is None:
             url_leaf = self.current_dnd.url_leaf
         term = "+".join(url_leaf.split("/")[2:]).replace("-", "+")
+        self.loading_update(f"Searching google images for Dungeons+and+Dragons+{term}")
         google_url = f"https://www.google.co.in/search?site=imghp&q=Dungeons+and+Dragons+{term}&tbs=il:cl&tbm=isch"
         headers = {
             'User-Agent': "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) "
@@ -394,6 +419,7 @@ class BigScreen:
         response = requests.get(google_url, headers)
         io_images = [x.split('"')[-1] for x in response.text.split(";") if
                      "https://encrypted-tbn0.gstatic.com/images?q=" in x]
+        self.loading_update(f"Found {len(io_images)} images!")
         self.root.update()
         return io_images
 

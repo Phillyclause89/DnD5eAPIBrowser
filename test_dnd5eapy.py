@@ -472,12 +472,14 @@ EQUIPMENT_CATEGORIES_RESPONSE: Dict[str, Union[int, List[
              'index': 'wondrous-items',
              'name': 'Wondrous Items',
              'url': '/api/equipment-categories/wondrous-items'}]}
-FEATS_RESPONSE: Dict[str, Union[int, List[Dict[str, str]]]
+FEATS_RESPONSE: Dict[
+    str, Union[int, List[Dict[str, str]]]
 ] = {'count': 1,
      'results': [{'index': 'grappler',
                   'name': 'Grappler',
                   'url': '/api/feats/grappler'}]}
-FEATURES_RESPONSE: Dict[str, Union[int, List[Dict[str, str]]]
+FEATURES_RESPONSE: Dict[
+    str, Union[int, List[Dict[str, str]]]
 ] = {'count': 370, 'results': [
     {"index": "action-surge-1-use",
      "name": "Action Surge (1 use)",
@@ -553,7 +555,8 @@ LANGUAGES_RESPONSE: Dict[str, Union[int, List[
              'index': 'undercommon',
              'name': 'Undercommon',
              'url': '/api/languages/undercommon'}]}
-MAGIC_ITEMS_RESPONSE: Dict[str, Union[int, List[Dict[str, str]]]
+MAGIC_ITEMS_RESPONSE: Dict[
+    str, Union[int, List[Dict[str, str]]]
 ] = {'count': 362, 'results': [
     {"index": "adamantine-armor",
      "name": "Adamantine Armor",
@@ -587,7 +590,8 @@ MAGIC_SCHOOLS_RESPONSE: Dict[str, Union[int, List[Union[
                  {'index': 'transmutation',
                   'name': 'Transmutation',
                   'url': '/api/magic-schools/transmutation'}]}
-MONSTERS_RESPONSE: Dict[str, Union[int, List[Dict[str, str]]]
+MONSTERS_RESPONSE: Dict[
+    str, Union[int, List[Dict[str, str]]]
 ] = {
     'count': 334,
     'results': [{
@@ -595,7 +599,8 @@ MONSTERS_RESPONSE: Dict[str, Union[int, List[Dict[str, str]]]
         "name": "Aboleth",
         "url": "/api/monsters/aboleth"
     }]}
-PROFICIENCIES_RESPONSE: Dict[str, Union[int, List[Dict[str, str]]]
+PROFICIENCIES_RESPONSE: Dict[
+    str, Union[int, List[Dict[str, str]]]
 ] = {'count': 117, 'results': [
     {"index": "alchemists-supplies",
      "name": "Alchemist's Supplies",
@@ -852,7 +857,8 @@ SKILLS_RESPONSE: Dict[str, Union[int, List[
              'index': 'survival',
              'name': 'Survival',
              'url': '/api/skills/survival'}]}
-SPELLS_RESPONSE: Dict[str, Union[int, List[Dict[str, str]]]
+SPELLS_RESPONSE: Dict[
+    str, Union[int, List[Dict[str, str]]]
 ] = {'count': 319,
      'results': [
          {"index": "acid-arrow", "name": "Acid Arrow",
@@ -1961,6 +1967,7 @@ class TestWeaponProperties(TestCase):
     """
 
     """
+
     def setUp(self) -> None:
         """
 
