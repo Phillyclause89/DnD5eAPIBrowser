@@ -92,7 +92,9 @@ class BigScreen:
         self.menu_bar = tk.Menu(self.root, font=self.font)
         self.menu_bar.add_command(label="Exit (F5)", font=self.font, command=self.root.destroy)
         self.menu_bar.add_command(label="Toggle Fullscreen (Esc)", font=self.font, command=self.full_screen_toggle)
-        self.dnds[-1]["images"] = self.dnds[-1]["url"].apply(self.get_images)
+        # Shitty-ness of this app is largely due to the df.apply call here
+        # Todo: make fetching images less shitty
+        self.current_dnd["images"] = self.current_dnd["url"].apply(self.get_images)
         self.menu_bar.add_command(label="Roll New Font (SHIFT + f)", font=self.font,
                                   command=lambda: self.loading_guard(self.roll_font_click))
         self.menu_bar.add_command(label="Back (BackSpace)", font=self.font,
@@ -195,9 +197,9 @@ class BigScreen:
     def update_page(self) -> None:
         self.current_dnd = self.dnds[-1]
         self.loading_update(f"Fetching images for {self.current_dnd}")
-        self.dnds[-1]["images"] = self.dnds[-1]["images"] if "images" in self.dnds[
+        self.current_dnd["images"] = self.current_dnd["images"] if "images" in self.dnds[
             -1
-        ].dframe.columns else self.dnds[-1]["url"].apply(self.get_images)
+        ].dframe.columns else self.current_dnd["url"].apply(self.get_images)
         self.loading_update(f"Generating buttons for {self.current_dnd}")
         self.butts = self.generate_butts()
         self.place_buttons_and_text()
@@ -252,7 +254,9 @@ class BigScreen:
             size: Tuple[int, int] = (int(self.screenwidth // 8), self.screenheight // 5)
             if image not in self.images:
                 self.loading_update(f"Building image from {image} for {butt}")
-                io_image: BytesIO = io.BytesIO(requests.get(image).content)
+                io_image: BytesIO = io.BytesIO(
+                    requests.get(image, timeout=self.current_dnd.requests_args["timeout"]).content
+                )
                 pil_img: Image = Image.open(io_image)
                 if pil_img.size[0] > pil_img.size[1]:
                     w_percent: float = (size[0] / float(pil_img.size[0]))
@@ -352,12 +356,12 @@ class BigScreen:
         for column in columns_to_include:
             s += f"Column: {column}\n"
             for index, value in butt_row_items[column].items():
+                s += f"Index: {index}\n"
                 if isinstance(value, Iterable) and not isinstance(value, str):
                     for i, sub_value in enumerate(value):
                         s += get_sub_sub_value(value, sub_value, i)
                 else:
                     s += f"Value: {value}\n"
-                s += f"Index: {index}\n"
             s += "\n"
         return s
 

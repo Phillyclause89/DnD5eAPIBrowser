@@ -23,10 +23,11 @@
 """tests for dnd5eapy
 
 """
-
+import timeit
 from typing import Any, Dict, List, Type, Union
 from unittest import TestCase
 
+import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from pandas import DataFrame
@@ -1239,6 +1240,18 @@ class TestDnD5eAPIObj(TestCase):
         self.assertIn("obj", self.dnd.dframe.columns)
         self.dnd.dframe["obj"].apply(lambda x: self.assertIsInstance(x, self.constructor))
         self.assertWarns(ResourceWarning, self.bad_dnd.create_instances_from_urls)
+
+    def test_apply(self):
+        def func(_x: pd.Series):
+            try:
+                _ = [self.assertIn(_i, _x.index) for _i in ["url", "name"]]
+                self.assertIn("/api/", _x["url"])
+                self.assertEqual(f"/api/{_x['name'].lower().replace(' ', '-')}", _x["url"])
+            except Exception as _e:
+                print(_x)
+                raise _e
+
+        self.dnd.dframe.apply(func, axis=1)
 
 
 class TestGetLeafConstructorMap(TestCase):
