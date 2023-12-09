@@ -26,6 +26,8 @@
 
 from _warnings import warn
 
+import numpy as np
+
 try:
     from typing import Any, Dict, Iterable, Iterator, List, Self, Set, Type, Union
 except ImportError as i_error:
@@ -66,7 +68,8 @@ class DnD5eAPIObj:
     url_root: str = "https://www.dnd5eapi.co"
     url_leaf: str = "/api"
     requests_args: Dict[str, Union[Dict[str, str], Dict[str, Dict[str, str]]]]
-    dframe: pd.DataFrame = pd.DataFrame()
+    dframe: pd.DataFrame = pd.DataFrame(columns=["name", "url"])
+    columns: pd.Index = dframe.columns
     response: requests.Response = requests.Response()
 
     def __init__(self, url_leaf: str = url_leaf, url_root: str = url_root,
@@ -84,6 +87,7 @@ class DnD5eAPIObj:
         self.leaf_constructors = get_leaf_constructor_map()
         self.response = self.__get_response__()
         self.dframe = self.get_df_from_json()
+        self.columns = self.dframe.columns
 
     def refresh(self) -> None:
         """Updates the `DnD5eAPIObj` instance with a new api request.
@@ -96,6 +100,7 @@ class DnD5eAPIObj:
         """
         self.response = self.__get_response__()
         self.dframe = self.get_df_from_json()
+        self.columns = self.dframe.columns
 
     def create_instances_from_nested_urls(self) -> None:
         """
@@ -240,11 +245,36 @@ class DnD5eAPIObj:
         json: Dict[str, Union[int, Dict[str, Any], List[Any]]] = self.__get_json__()
         if json.get('count') and json.get('results'):
             _df: pd.DataFrame = pd.json_normalize(json.get('results'))
-            return _df.set_index("index") if 'index' in _df.columns else _df
+            return self.__set_df_index__(_df)
         _df = pd.json_normalize([json])
         if self.response.url == self.requests_args['url'] and self.url_leaf == "/api":
             return _df.transpose().rename(columns={0: "url"}).rename_axis("index")
+        return self.__set_df_index__(_df)
+
+    @staticmethod
+    def __set_df_index__(_df):
         return _df.set_index("index") if 'index' in _df.columns else _df
+
+    @staticmethod
+    def __add_name_column__(_df):
+        if ("url" in _df.columns) and "name" not in _df.columns:
+            _df["name"] = _df["url"].str.replace("/api/", "").str.replace("-", " ").str.title()
+            _df = _df[['name'] + [col for col in _df.columns if col != 'name']]
+        return _df
+
+    def __get_sub_dfs__(self, _df):
+        if _df.shape[0] == 1 and _df.shape[1] > 2:
+            for col in (c for c in _df.columns if c not in ['url', 'name']):
+                item = _df.at[_df.index[0], col]
+                if isinstance(item, list) and len(item) > 0:
+                    if isinstance(item[0], Dict):
+                        sub_df = pd.json_normalize(item)
+                        sub_df = self.__set_df_index__(sub_df)
+                        sub_df = self.__get_sub_dfs__(sub_df)
+                        _df.at[_df.index[0], col] = sub_df
+                    else:
+                        _df.at[_df.index[0], col] = np.array(item)
+        return _df
 
     def get_df_from_json(self) -> pd.DataFrame:
         """Invokes `__get_df__`
@@ -254,10 +284,11 @@ class DnD5eAPIObj:
         DataFrame
 
         """
-        _df: pd.DataFrame = self.__get_df__()
-        if ("url" in _df.columns) and "name" not in _df.columns:
-            _df["name"] = _df["url"].str.replace("/api/", "").str.replace("-", " ").str.title()
-            _df = _df[['name'] + [col for col in _df.columns if col != 'name']]
+        _df: pd.DataFrame = self.__get_sub_dfs__(
+            self.__add_name_column__(
+                self.__get_df__()
+            )
+        )
         return _df
 
     def __getitem__(self, item: Union[str, pd.Series]) -> Union[pd.Series, pd.DataFrame]:

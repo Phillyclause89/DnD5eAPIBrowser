@@ -336,34 +336,15 @@ class BigScreen:
         The text representation includes the column names and values for all columns except the `"images"` column.
         """
 
-        def get_sub_sub_value(_value: Union[Iterable, List, Dict], _sub_value: Union[str, int], _i: int):
-            """
-
-            Parameters
-            ----------
-            _value
-            _sub_value
-            _i
-
-            Returns
-            -------
-
-            """
-            return f"{_sub_value}: {_value[_sub_value]}\n" if isinstance(_value, dict) else f"{_value[_i]}\n"
-
-        s = ""
+        text = ""
         columns_to_include = [c for c in butt_row_items.columns if c != "images"]
         for column in columns_to_include:
-            s += f"Column: {column}\n"
+            text += f"Column: {column}\n"
             for index, value in butt_row_items[column].items():
-                s += f"Index: {index}\n"
-                if isinstance(value, Iterable) and not isinstance(value, str):
-                    for i, sub_value in enumerate(value):
-                        s += get_sub_sub_value(value, sub_value, i)
-                else:
-                    s += f"Value: {value}\n"
-            s += "\n"
-        return s
+                text += f"Index: {index}\n"
+                text += f"Value:\n{value}\n"
+            text += "\n"
+        return text
 
     def generate_butts(self) -> List[tk.Button]:
         butts = []

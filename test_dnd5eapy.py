@@ -1278,7 +1278,7 @@ class TestGetLeafConstructorMap(TestCase):
         """
         results = self.constructors_const()
         called = [const() for const in results.values()]
-        [self.assertIsInstance(obj, self.constructor) for obj in called]
+        _ = [self.assertIsInstance(obj, self.constructor) for obj in called]
 
 
 class TestAbilityScores(TestCase):
