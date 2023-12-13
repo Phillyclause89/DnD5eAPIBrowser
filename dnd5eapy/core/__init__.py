@@ -268,9 +268,8 @@ class DnD5eAPIObj:
                 item = _df.at[_df.index[0], col]
                 if isinstance(item, list) and len(item) > 0:
                     if isinstance(item[0], Dict):
-                        sub_df = pd.json_normalize(item)
+                        sub_df = pd.json_normalize(item, max_level=5)
                         sub_df = self.__set_df_index__(sub_df)
-                        sub_df = self.__get_sub_dfs__(sub_df)
                         _df.at[_df.index[0], col] = sub_df
                     else:
                         _df.at[_df.index[0], col] = np.array(item)

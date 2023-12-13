@@ -250,6 +250,7 @@ class BigScreen:
                 justify=tk.CENTER,
                 tags=("DeleteMe", f"{butt._name}"),
             )
+
             image: str = random.choice(butt_row_items["images"].values[0])
             size: Tuple[int, int] = (int(self.screenwidth // 8), self.screenheight // 5)
             if image not in self.images:
@@ -347,6 +348,12 @@ class BigScreen:
         return text
 
     def generate_butts(self) -> List[tk.Button]:
+        """
+
+        Returns
+        -------
+
+        """
         butts = []
         for i, u in zip(self.current_dnd.dframe.index, self.current_dnd["url"]):
             self.root.update()
@@ -384,7 +391,13 @@ class BigScreen:
         self.cascade_label = f"DnDObjs Loaded: {len(self.dnds)} Size: {size_total} (kB)"
         return self.obj_cascade, self.cascade_label
 
-    def select_loaded(self, i):
+    def select_loaded(self, i: int) -> None:
+        """
+
+        Parameters
+        ----------
+        i
+        """
         self.loading_update(f"Loading {self.dnds[i]}")
         self.clear_page()
         self.dnds.append(self.dnds.pop(i))
@@ -395,6 +408,17 @@ class BigScreen:
             self,
             url_leaf: str = None
     ) -> Union[None, List[JpegImagePlugin.JpegImageFile], List[PngImagePlugin.PngImageFile], List[str], List]:
+        """
+
+        Parameters
+        ----------
+        url_leaf : str
+
+        Returns
+        -------
+        Union[None, List[PIL.JpegImagePlugin.JpegImageFile], List[PIL.PngImagePlugin.PngImageFile], List[str], List]
+
+        """
         if url_leaf is None:
             url_leaf = self.current_dnd.url_leaf
         term = "+".join(url_leaf.split("/")[2:]).replace("-", "+")
