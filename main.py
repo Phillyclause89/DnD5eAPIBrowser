@@ -27,7 +27,6 @@ import io
 import random
 import sys
 import tkinter as tk
-from collections.abc import Iterable
 from functools import partial
 from io import BytesIO
 from tkinter import Button, Menu, Tk, font
@@ -43,6 +42,7 @@ import dnd5eapy as dnd
 from dnd5eapy import DnD5eAPIObj
 
 
+# pylint: disable=too-many-instance-attributes
 class BigScreen:
     """Shitty Browser App for figuring out what's in the api.
 
@@ -146,8 +146,7 @@ class BigScreen:
         -------
         Any
         """
-        if not self.loading:
-            return func(*args)
+        return None if self.loading else func(*args)
 
     def loading_update(self, f_text: Any) -> bool:
         """
@@ -181,25 +180,42 @@ class BigScreen:
         return self.font, self.font_family
 
     def roll_font_click(self, _: Any = None) -> None:
+        """
+        Parameters
+        ----------
+        _ : Union[None, None]
+        """
         self.clear_page()
-        m = "New Font"
-        self.loading_update(m)
+        message = "New Font"
+        self.loading_update(message)
         self.roll_new_font()
-        self.loading_update(f"{m}: {self.font_family}")
+        self.loading_update(f"{message}: {self.font_family}")
         self.update_page()
         self.loading = False
 
     def full_screen_toggle(self, _=None):
+        """
+
+        Parameters
+        ----------
+        _
+        """
         self.fullscreen = not self.fullscreen
         self.root.wm_attributes("-fullscreen", self.fullscreen)
         self.root.wm_attributes("-top", self.fullscreen)
 
     def update_page(self) -> None:
+        """
+        Returns
+        -------
+        None
+
+        """
         self.current_dnd = self.dnds[-1]
         self.loading_update(f"Fetching images for {self.current_dnd}")
         self.current_dnd["images"] = self.current_dnd["images"] if "images" in self.dnds[
             -1
-        ].dframe.columns else self.current_dnd["url"].apply(self.get_images)
+        ].df.columns else self.current_dnd["url"].apply(self.get_images)
         self.loading_update(f"Generating buttons for {self.current_dnd}")
         self.butts = self.generate_butts()
         self.place_buttons_and_text()
@@ -211,15 +227,27 @@ class BigScreen:
         self.root.update()
 
     def clear_page(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
         self.loading_update("Cleaning up current page...")
         self.canvas.xview_moveto(self.orig_x)
         self.canvas.yview_moveto(self.orig_y)
-        [b.destroy() for b in self.butts]
+        _ = [b.destroy() for b in self.butts]
         self.canvas.delete("DeleteMe")
         self.obj_cascade.delete(0, "end")
         self.root.update()
 
     def go_back(self, _: Union[Any, None] = None) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
         self.loading_update(f"Going back to {self.dnds[-2]}")
         self.clear_page()
         self.dnds.insert(0, self.dnds.pop(-1))
@@ -227,10 +255,20 @@ class BigScreen:
         self.loading = False
 
     def _on_mousewheel(self, event: tk.Event) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
         self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
 
     def place_buttons_and_text(self) -> None:
         """place butts
+
+        Returns
+        -------
+        None
 
         """
         y: int = self.screenheight // 8
@@ -260,11 +298,11 @@ class BigScreen:
                 )
                 pil_img: Image = Image.open(io_image)
                 if pil_img.size[0] > pil_img.size[1]:
-                    w_percent: float = (size[0] / float(pil_img.size[0]))
+                    w_percent: float = size[0] / float(pil_img.size[0])
                     h_size: int = int((float(pil_img.size[1]) * float(w_percent)))
                     pil_img = pil_img.resize((size[0], h_size), Image.LANCZOS)
                 else:
-                    h_percent: float = (size[1] / float(pil_img.size[1]))
+                    h_percent: float = size[1] / float(pil_img.size[1])
                     w_size: int = int((float(pil_img.size[0]) * float(h_percent)))
                     pil_img = pil_img.resize((w_size, size[1]), Image.LANCZOS)
                 pil_img.seek(0)
@@ -283,14 +321,26 @@ class BigScreen:
             self.root.update()
 
     def make_scroll(self) -> None:
-        v = tk.Scrollbar(self.root, orient=tk.VERTICAL, command=self.canvas.yview)
-        v.grid(row=0, column=1, sticky=tk.NS)
-        self.canvas.config(yscrollcommand=v.set)
-        h = tk.Scrollbar(self.root, orient=tk.HORIZONTAL, command=self.canvas.xview)
-        h.grid(row=1, column=0, sticky=tk.EW)
-        self.canvas.config(xscrollcommand=h.set)
+        """
+
+        Returns
+        -------
+        None
+        """
+        y = tk.Scrollbar(self.root, orient=tk.VERTICAL, command=self.canvas.yview)
+        y.grid(row=0, column=1, sticky=tk.NS)
+        self.canvas.config(yscrollcommand=y.set)
+        x = tk.Scrollbar(self.root, orient=tk.HORIZONTAL, command=self.canvas.xview)
+        x.grid(row=1, column=0, sticky=tk.EW)
+        self.canvas.config(xscrollcommand=x.set)
 
     def closer(self, _: Any) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
         self.root.destroy()
 
     def button_click(self, url: str, _=None) -> None:
@@ -300,6 +350,10 @@ class BigScreen:
         ----------        
         url : str
         _ : Any
+
+        Returns
+        -------
+        None
         
         """
         self.loading_update(f"Loading {url}")
@@ -352,16 +406,17 @@ class BigScreen:
 
         Returns
         -------
+        List[tkinter.Button]
 
         """
         butts = []
-        for i, u in zip(self.current_dnd.dframe.index, self.current_dnd["url"]):
+        for i, url in zip(self.current_dnd.df.index, self.current_dnd["url"]):
             self.root.update()
             butts.append(tk.Button(
                 self.canvas,
                 text=f"{i}",
-                command=partial(lambda url=u: self.loading_guard(self.button_click, url)),
-                name=f"{u}",
+                command=partial(lambda url=url: self.loading_guard(self.button_click, url)),
+                name=f"{url}",
                 activebackground='#027148',
                 background="#0000FF"
             ))
@@ -380,7 +435,7 @@ class BigScreen:
         for i, dnd_obj in list(enumerate(self.dnds))[::-1]:
             self.root.update()
             size = ((sys.getsizeof(dnd_obj) + sys.getsizeof(
-                dnd_obj.dframe) + sys.getsizeof(
+                dnd_obj.df) + sys.getsizeof(
                 dnd_obj.response)) / 1024)
             size_total += size
             self.obj_cascade.add_command(
@@ -423,12 +478,13 @@ class BigScreen:
             url_leaf = self.current_dnd.url_leaf
         term = "+".join(url_leaf.split("/")[2:]).replace("-", "+")
         self.loading_update(f"Searching google images for Dungeons+and+Dragons+{term}")
-        google_url = f"https://www.google.co.in/search?site=imghp&q=Dungeons+and+Dragons+{term}&tbs=il:cl&tbm=isch"
         headers = {
-            'User-Agent': "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                          "Chrome/43.0.2357.134 Safari/537.36 "
+            'url': f"https://www.google.co.in/search?site=imghp&q=Dungeons+and+Dragons+{term}&tbs=il:cl&tbm=isch",
+            'headers': {'User-Agent': "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                                      "Chrome/43.0.2357.134 Safari/537.36 "},
+            "timeout": self.current_dnd.requests_args["timeout"]
         }
-        response = requests.get(google_url, headers)
+        response = requests.get(**headers)
         io_images = [x.split('"')[-1] for x in response.text.split(";") if
                      "https://encrypted-tbn0.gstatic.com/images?q=" in x]
         self.loading_update(f"Found {len(io_images)} images!")

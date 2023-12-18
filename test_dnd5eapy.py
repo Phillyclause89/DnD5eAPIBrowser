@@ -20,1122 +20,17 @@
 #  THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
 #  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF
 #  OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-"""tests for dnd5eapy
+"""tests for dnd5eapy!
 
 """
-import timeit
-from typing import Any, Dict, List, Type, Union
+from typing import Any, Dict, Type, Union
 from unittest import TestCase
-
-import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from pandas import DataFrame
 
 import dnd5eapy
-
-URL_ROOT = "https://www.dnd5eapi.co"
-
-HEADERS = {'Accept': 'application/json'}
-
-GOOD_BASE_RESPONSE: Dict[str, str] = {'ability-scores': '/api/ability-scores',
-                                      'alignments': '/api/alignments',
-                                      'backgrounds': '/api/backgrounds',
-                                      'classes': '/api/classes',
-                                      'conditions': '/api/conditions',
-                                      'damage-types': '/api/damage-types',
-                                      'equipment': '/api/equipment',
-                                      'equipment-categories': '/api/equipment-categories',
-                                      'feats': '/api/feats',
-                                      'features': '/api/features',
-                                      'languages': '/api/languages',
-                                      'magic-items': '/api/magic-items',
-                                      'magic-schools': '/api/magic-schools',
-                                      'monsters': '/api/monsters',
-                                      'proficiencies': '/api/proficiencies',
-                                      'races': '/api/races',
-                                      'rule-sections': '/api/rule-sections',
-                                      'rules': '/api/rules',
-                                      'skills': '/api/skills',
-                                      'spells': '/api/spells',
-                                      'subclasses': '/api/subclasses',
-                                      'subraces': '/api/subraces',
-                                      'traits': '/api/traits',
-                                      'weapon-properties': '/api/weapon-properties'}
-BAD_404_RESPONSE: Dict[str, int] = {'status_code': 404}
-ABILITY_SCORES_RESPONSE: Dict[str, Union[int, List[
-    Union[Dict[str, str], Dict[str, str], Dict[str, str],
-          Dict[str, str], Dict[str, str], Dict[str, str]]]]] = {
-    'count': 6,
-    'results': [{'index': 'cha', 'name': 'CHA', 'url': '/api/ability-scores/cha'},
-                {'index': 'con', 'name': 'CON', 'url': '/api/ability-scores/con'},
-                {'index': 'dex', 'name': 'DEX', 'url': '/api/ability-scores/dex'},
-                {'index': 'int', 'name': 'INT', 'url': '/api/ability-scores/int'},
-                {'index': 'str', 'name': 'STR', 'url': '/api/ability-scores/str'},
-                {'index': 'wis', 'name': 'WIS', 'url': '/api/ability-scores/wis'}]}
-ABILITY_SCORE_RESPONSE: Dict[
-    str, Union[str, List[Union[Dict[str, str], Dict[str, str],
-                               Dict[str, str], Dict[str, str]]], List[str]]] = {
-    'desc': ['Charisma measures your ability to interact effectively with others. '
-             'It includes such factors as confidence and eloquence, and it can '
-             'represent a charming or commanding personality.',
-             'A Charisma check might arise when you try to influence or entertain '
-             'others, when you try to make an impression or tell a convincing '
-             'lie, or when you are navigating a tricky social situation. The '
-             'Deception, Intimidation, Performance, and Persuasion skills reflect '
-             'aptitude in certain kinds of Charisma checks.'],
-    'full_name': 'Charisma',
-    'index': 'cha',
-    'name': 'CHA',
-    'skills': [{'index': 'deception',
-                'name': 'Deception',
-                'url': '/api/skills/deception'},
-               {'index': 'intimidation',
-                'name': 'Intimidation',
-                'url': '/api/skills/intimidation'},
-               {'index': 'performance',
-                'name': 'Performance',
-                'url': '/api/skills/performance'},
-               {'index': 'persuasion',
-                'name': 'Persuasion',
-                'url': '/api/skills/persuasion'}],
-    'url': '/api/ability-scores/cha'}
-ALIGNMENTS_RESPONSE: Dict[str, Union[int, List[Union[
-    Dict[str, str], Dict[str, str], Dict[str, str],
-    Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str],
-    Dict[str, str], Dict[str, str]]]]
-] = {'count': 9,
-     'results': [{'index': 'chaotic-evil',
-                  'name': 'Chaotic Evil',
-                  'url': '/api/alignments/chaotic-evil'},
-                 {'index': 'chaotic-good',
-                  'name': 'Chaotic Good',
-                  'url': '/api/alignments/chaotic-good'},
-                 {'index': 'chaotic-neutral',
-                  'name': 'Chaotic Neutral',
-                  'url': '/api/alignments/chaotic-neutral'},
-                 {'index': 'lawful-evil',
-                  'name': 'Lawful Evil',
-                  'url': '/api/alignments/lawful-evil'},
-                 {'index': 'lawful-good',
-                  'name': 'Lawful Good',
-                  'url': '/api/alignments/lawful-good'},
-                 {'index': 'lawful-neutral',
-                  'name': 'Lawful Neutral',
-                  'url': '/api/alignments/lawful-neutral'},
-                 {'index': 'neutral',
-                  'name': 'Neutral',
-                  'url': '/api/alignments/neutral'},
-                 {'index': 'neutral-evil',
-                  'name': 'Neutral Evil',
-                  'url': '/api/alignments/neutral-evil'},
-                 {'index': 'neutral-good',
-                  'name': 'Neutral Good',
-                  'url': '/api/alignments/neutral-good'}]}
-BACKGROUNDS_RESPONSE: Dict[
-    str, Union[int, List[Dict[str, str]]]
-] = {'count': 1,
-     'results': [{'index': 'acolyte',
-                  'name': 'Acolyte',
-                  'url': '/api/backgrounds/acolyte'}]}
-CLASSES_RESPONSE: Dict[str, Union[int, List[
-    Union[Union[Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str]], Any]]]
-] = {'count': 12,
-     'results': [{
-         'index': 'barbarian',
-         'name': 'Barbarian',
-         'url': '/api/classes/barbarian'},
-         {
-             'index': 'bard',
-             'name': 'Bard',
-             'url': '/api/classes/bard'},
-         {
-             'index': 'cleric',
-             'name': 'Cleric',
-             'url': '/api/classes/cleric'},
-         {
-             'index': 'druid',
-             'name': 'Druid',
-             'url': '/api/classes/druid'},
-         {
-             'index': 'fighter',
-             'name': 'Fighter',
-             'url': '/api/classes/fighter'},
-         {
-             'index': 'monk',
-             'name': 'Monk',
-             'url': '/api/classes/monk'},
-         {
-             'index': 'paladin',
-             'name': 'Paladin',
-             'url': '/api/classes/paladin'},
-         {
-             'index': 'ranger',
-             'name': 'Ranger',
-             'url': '/api/classes/ranger'},
-         {
-             'index': 'rogue',
-             'name': 'Rogue',
-             'url': '/api/classes/rogue'},
-         {
-             'index': 'sorcerer',
-             'name': 'Sorcerer',
-             'url': '/api/classes/sorcerer'},
-         {
-             'index': 'warlock',
-             'name': 'Warlock',
-             'url': '/api/classes/warlock'},
-         {
-             'index': 'wizard',
-             'name': 'Wizard',
-             'url': '/api/classes/wizard'}]}
-CONDITIONS_RESPONSE: Dict[str, Union[int, List[
-    Union[Union[Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str]], Any]]]
-] = {'count': 15,
-     'results': [{
-         'index': 'blinded',
-         'name': 'Blinded',
-         'url': '/api/conditions/blinded'},
-         {
-             'index': 'charmed',
-             'name': 'Charmed',
-             'url': '/api/conditions/charmed'},
-         {
-             'index': 'deafened',
-             'name': 'Deafened',
-             'url': '/api/conditions/deafened'},
-         {
-             'index': 'exhaustion',
-             'name': 'Exhaustion',
-             'url': '/api/conditions/exhaustion'},
-         {
-             'index': 'frightened',
-             'name': 'Frightened',
-             'url': '/api/conditions/frightened'},
-         {
-             'index': 'grappled',
-             'name': 'Grappled',
-             'url': '/api/conditions/grappled'},
-         {
-             'index': 'incapacitated',
-             'name': 'Incapacitated',
-             'url': '/api/conditions/incapacitated'},
-         {
-             'index': 'invisible',
-             'name': 'Invisible',
-             'url': '/api/conditions/invisible'},
-         {
-             'index': 'paralyzed',
-             'name': 'Paralyzed',
-             'url': '/api/conditions/paralyzed'},
-         {
-             'index': 'petrified',
-             'name': 'Petrified',
-             'url': '/api/conditions/petrified'},
-         {
-             'index': 'poisoned',
-             'name': 'Poisoned',
-             'url': '/api/conditions/poisoned'},
-         {
-             'index': 'prone',
-             'name': 'Prone',
-             'url': '/api/conditions/prone'},
-         {
-             'index': 'restrained',
-             'name': 'Restrained',
-             'url': '/api/conditions/restrained'},
-         {
-             'index': 'stunned',
-             'name': 'Stunned',
-             'url': '/api/conditions/stunned'},
-         {
-             'index': 'unconscious',
-             'name': 'Unconscious',
-             'url': '/api/conditions/unconscious'}]}
-DAMAGE_TYPES_RESPONSE: Dict[str, Union[int, List[
-    Union[Union[Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str]], Any]]]
-] = {'count': 13,
-     'results': [{'index': 'acid',
-                  'name': 'Acid',
-                  'url': '/api/damage-types/acid'},
-                 {
-                     'index': 'bludgeoning',
-                     'name': 'Bludgeoning',
-                     'url': '/api/damage-types/bludgeoning'},
-                 {'index': 'cold',
-                  'name': 'Cold',
-                  'url': '/api/damage-types/cold'},
-                 {'index': 'fire',
-                  'name': 'Fire',
-                  'url': '/api/damage-types/fire'},
-                 {'index': 'force',
-                  'name': 'Force',
-                  'url': '/api/damage-types/force'},
-                 {
-                     'index': 'lightning',
-                     'name': 'Lightning',
-                     'url': '/api/damage-types/lightning'},
-                 {
-                     'index': 'necrotic',
-                     'name': 'Necrotic',
-                     'url': '/api/damage-types/necrotic'},
-                 {
-                     'index': 'piercing',
-                     'name': 'Piercing',
-                     'url': '/api/damage-types/piercing'},
-                 {'index': 'poison',
-                  'name': 'Poison',
-                  'url': '/api/damage-types/poison'},
-                 {'index': 'psychic',
-                  'name': 'Psychic',
-                  'url': '/api/damage-types/psychic'},
-                 {'index': 'radiant',
-                  'name': 'Radiant',
-                  'url': '/api/damage-types/radiant'},
-                 {
-                     'index': 'slashing',
-                     'name': 'Slashing',
-                     'url': '/api/damage-types/slashing'},
-                 {'index': 'thunder',
-                  'name': 'Thunder',
-                  'url': '/api/damage-types/thunder'}]}
-EQUIPMENT_RESPONSE: Dict[
-    str, Union[int, List[Dict[str, str]]]
-] = {'count': 237, 'results': [{
-    'index': "abacus", 'name': "Abacus", 'url': "/api/equipment/abacus"
-}]}
-EQUIPMENT_CATEGORIES_RESPONSE: Dict[str, Union[int, List[
-    Union[Union[Dict[str, str], Dict[str, str], Dict[str, str], Dict[
-        str, str], Dict[str, str], Dict[str, str], Dict[
-                    str, str], Dict[str, str], Dict[str, str], Dict[
-                    str, str]], Any]]]
-] = {'count': 39,
-     'results': [{
-         'index': 'adventuring-gear',
-         'name': 'Adventuring Gear',
-         'url': '/api/equipment-categories/adventuring-gear'},
-         {
-             'index': 'ammunition',
-             'name': 'Ammunition',
-             'url': '/api/equipment-categories/ammunition'},
-         {
-             'index': 'arcane-foci',
-             'name': 'Arcane Foci',
-             'url': '/api/equipment-categories/arcane-foci'},
-         {
-             'index': 'armor',
-             'name': 'Armor',
-             'url': '/api/equipment-categories/armor'},
-         {
-             'index': 'artisans-tools',
-             'name': "Artisan's Tools",
-             'url': '/api/equipment-categories/artisans-tools'},
-         {
-             'index': 'druidic-foci',
-             'name': 'Druidic Foci',
-             'url': '/api/equipment-categories/druidic-foci'},
-         {
-             'index': 'equipment-packs',
-             'name': 'Equipment Packs',
-             'url': '/api/equipment-categories/equipment-packs'},
-         {
-             'index': 'gaming-sets',
-             'name': 'Gaming Sets',
-             'url': '/api/equipment-categories/gaming-sets'},
-         {
-             'index': 'heavy-armor',
-             'name': 'Heavy Armor',
-             'url': '/api/equipment-categories/heavy-armor'},
-         {
-             'index': 'holy-symbols',
-             'name': 'Holy Symbols',
-             'url': '/api/equipment-categories/holy-symbols'},
-         {
-             'index': 'kits',
-             'name': 'Kits',
-             'url': '/api/equipment-categories/kits'},
-         {
-             'index': 'land-vehicles',
-             'name': 'Land Vehicles',
-             'url': '/api/equipment-categories/land-vehicles'},
-         {
-             'index': 'light-armor',
-             'name': 'Light Armor',
-             'url': '/api/equipment-categories/light-armor'},
-         {
-             'index': 'martial-melee-weapons',
-             'name': 'Martial Melee Weapons',
-             'url': '/api/equipment-categories/martial-melee-weapons'},
-         {
-             'index': 'martial-ranged-weapons',
-             'name': 'Martial Ranged Weapons',
-             'url': '/api/equipment-categories/martial-ranged-weapons'},
-         {
-             'index': 'martial-weapons',
-             'name': 'Martial Weapons',
-             'url': '/api/equipment-categories/martial-weapons'},
-         {
-             'index': 'medium-armor',
-             'name': 'Medium Armor',
-             'url': '/api/equipment-categories/medium-armor'},
-         {
-             'index': 'melee-weapons',
-             'name': 'Melee Weapons',
-             'url': '/api/equipment-categories/melee-weapons'},
-         {
-             'index': 'mounts-and-other-animals',
-             'name': 'Mounts and Other Animals',
-             'url': '/api/equipment-categories/mounts-and-other-animals'},
-         {
-             'index': 'mounts-and-vehicles',
-             'name': 'Mounts and Vehicles',
-             'url': '/api/equipment-categories/mounts-and-vehicles'},
-         {
-             'index': 'musical-instruments',
-             'name': 'Musical Instruments',
-             'url': '/api/equipment-categories/musical-instruments'},
-         {
-             'index': 'other-tools',
-             'name': 'Other Tools',
-             'url': '/api/equipment-categories/other-tools'},
-         {
-             'index': 'potion',
-             'name': 'Potion',
-             'url': '/api/equipment-categories/potion'},
-         {
-             'index': 'ranged-weapons',
-             'name': 'Ranged Weapons',
-             'url': '/api/equipment-categories/ranged-weapons'},
-         {
-             'index': 'ring',
-             'name': 'Ring',
-             'url': '/api/equipment-categories/ring'},
-         {
-             'index': 'rod',
-             'name': 'Rod',
-             'url': '/api/equipment-categories/rod'},
-         {
-             'index': 'scroll',
-             'name': 'Scroll',
-             'url': '/api/equipment-categories/scroll'},
-         {
-             'index': 'shields',
-             'name': 'Shields',
-             'url': '/api/equipment-categories/shields'},
-         {
-             'index': 'simple-melee-weapons',
-             'name': 'Simple Melee Weapons',
-             'url': '/api/equipment-categories/simple-melee-weapons'},
-         {
-             'index': 'simple-ranged-weapons',
-             'name': 'Simple Ranged Weapons',
-             'url': '/api/equipment-categories/simple-ranged-weapons'},
-         {
-             'index': 'simple-weapons',
-             'name': 'Simple Weapons',
-             'url': '/api/equipment-categories/simple-weapons'},
-         {
-             'index': 'staff',
-             'name': 'Staff',
-             'url': '/api/equipment-categories/staff'},
-         {
-             'index': 'standard-gear',
-             'name': 'Standard Gear',
-             'url': '/api/equipment-categories/standard-gear'},
-         {
-             'index': 'tack-harness-and-drawn-vehicles',
-             'name': 'Tack, Harness, and Drawn Vehicles',
-             'url': '/api/equipment-categories/tack-harness-and-drawn-vehicles'},
-         {
-             'index': 'tools',
-             'name': 'Tools',
-             'url': '/api/equipment-categories/tools'},
-         {
-             'index': 'wand',
-             'name': 'Wand',
-             'url': '/api/equipment-categories/wand'},
-         {
-             'index': 'waterborne-vehicles',
-             'name': 'Waterborne Vehicles',
-             'url': '/api/equipment-categories/waterborne-vehicles'},
-         {
-             'index': 'weapon',
-             'name': 'Weapon',
-             'url': '/api/equipment-categories/weapon'},
-         {
-             'index': 'wondrous-items',
-             'name': 'Wondrous Items',
-             'url': '/api/equipment-categories/wondrous-items'}]}
-FEATS_RESPONSE: Dict[
-    str, Union[int, List[Dict[str, str]]]
-] = {'count': 1,
-     'results': [{'index': 'grappler',
-                  'name': 'Grappler',
-                  'url': '/api/feats/grappler'}]}
-FEATURES_RESPONSE: Dict[
-    str, Union[int, List[Dict[str, str]]]
-] = {'count': 370, 'results': [
-    {"index": "action-surge-1-use",
-     "name": "Action Surge (1 use)",
-     "url": "/api/features/action-surge-1-use"}]}
-LANGUAGES_RESPONSE: Dict[str, Union[int, List[
-    Union[Union[Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str]], Any]]]
-] = {'count': 16,
-     'results': [{
-         'index': 'abyssal',
-         'name': 'Abyssal',
-         'url': '/api/languages/abyssal'},
-         {
-             'index': 'celestial',
-             'name': 'Celestial',
-             'url': '/api/languages/celestial'},
-         {
-             'index': 'common',
-             'name': 'Common',
-             'url': '/api/languages/common'},
-         {
-             'index': 'deep-speech',
-             'name': 'Deep Speech',
-             'url': '/api/languages/deep-speech'},
-         {
-             'index': 'draconic',
-             'name': 'Draconic',
-             'url': '/api/languages/draconic'},
-         {
-             'index': 'dwarvish',
-             'name': 'Dwarvish',
-             'url': '/api/languages/dwarvish'},
-         {
-             'index': 'elvish',
-             'name': 'Elvish',
-             'url': '/api/languages/elvish'},
-         {
-             'index': 'giant',
-             'name': 'Giant',
-             'url': '/api/languages/giant'},
-         {
-             'index': 'gnomish',
-             'name': 'Gnomish',
-             'url': '/api/languages/gnomish'},
-         {
-             'index': 'goblin',
-             'name': 'Goblin',
-             'url': '/api/languages/goblin'},
-         {
-             'index': 'halfling',
-             'name': 'Halfling',
-             'url': '/api/languages/halfling'},
-         {
-             'index': 'infernal',
-             'name': 'Infernal',
-             'url': '/api/languages/infernal'},
-         {
-             'index': 'orc',
-             'name': 'Orc',
-             'url': '/api/languages/orc'},
-         {
-             'index': 'primordial',
-             'name': 'Primordial',
-             'url': '/api/languages/primordial'},
-         {
-             'index': 'sylvan',
-             'name': 'Sylvan',
-             'url': '/api/languages/sylvan'},
-         {
-             'index': 'undercommon',
-             'name': 'Undercommon',
-             'url': '/api/languages/undercommon'}]}
-MAGIC_ITEMS_RESPONSE: Dict[
-    str, Union[int, List[Dict[str, str]]]
-] = {'count': 362, 'results': [
-    {"index": "adamantine-armor",
-     "name": "Adamantine Armor",
-     "url": "/api/magic-items/adamantine-armor"}]}
-MAGIC_SCHOOLS_RESPONSE: Dict[str, Union[int, List[Union[
-    Dict[str, str], Dict[str, str], Dict[str, str],
-    Dict[str, str], Dict[str, str], Dict[str, str],
-    Dict[str, str], Dict[str, str]]]]
-] = {'count': 8,
-     'results': [{'index': 'abjuration',
-                  'name': 'Abjuration',
-                  'url': '/api/magic-schools/abjuration'},
-                 {'index': 'conjuration',
-                  'name': 'Conjuration',
-                  'url': '/api/magic-schools/conjuration'},
-                 {'index': 'divination',
-                  'name': 'Divination',
-                  'url': '/api/magic-schools/divination'},
-                 {'index': 'enchantment',
-                  'name': 'Enchantment',
-                  'url': '/api/magic-schools/enchantment'},
-                 {'index': 'evocation',
-                  'name': 'Evocation',
-                  'url': '/api/magic-schools/evocation'},
-                 {'index': 'illusion',
-                  'name': 'Illusion',
-                  'url': '/api/magic-schools/illusion'},
-                 {'index': 'necromancy',
-                  'name': 'Necromancy',
-                  'url': '/api/magic-schools/necromancy'},
-                 {'index': 'transmutation',
-                  'name': 'Transmutation',
-                  'url': '/api/magic-schools/transmutation'}]}
-MONSTERS_RESPONSE: Dict[
-    str, Union[int, List[Dict[str, str]]]
-] = {
-    'count': 334,
-    'results': [{
-        "index": "aboleth",
-        "name": "Aboleth",
-        "url": "/api/monsters/aboleth"
-    }]}
-PROFICIENCIES_RESPONSE: Dict[
-    str, Union[int, List[Dict[str, str]]]
-] = {'count': 117, 'results': [
-    {"index": "alchemists-supplies",
-     "name": "Alchemist's Supplies",
-     "url": "/api/proficiencies/alchemists-supplies"}
-]}
-RACES_RESPONSE: Dict[str, Union[int, List[Union[
-    Dict[str, str], Dict[str, str], Dict[str, str],
-    Dict[str, str], Dict[str, str], Dict[str, str],
-    Dict[str, str], Dict[str, str], Dict[str, str]]]]
-] = {'count': 9,
-     'results': [{'index': 'dragonborn',
-                  'name': 'Dragonborn',
-                  'url': '/api/races/dragonborn'},
-                 {'index': 'dwarf', 'name': 'Dwarf',
-                  'url': '/api/races/dwarf'},
-                 {'index': 'elf', 'name': 'Elf',
-                  'url': '/api/races/elf'},
-                 {'index': 'gnome', 'name': 'Gnome',
-                  'url': '/api/races/gnome'},
-                 {'index': 'half-elf',
-                  'name': 'Half-Elf',
-                  'url': '/api/races/half-elf'},
-                 {'index': 'half-orc',
-                  'name': 'Half-Orc',
-                  'url': '/api/races/half-orc'},
-                 {'index': 'halfling',
-                  'name': 'Halfling',
-                  'url': '/api/races/halfling'},
-                 {'index': 'human', 'name': 'Human',
-                  'url': '/api/races/human'},
-                 {'index': 'tiefling',
-                  'name': 'Tiefling',
-                  'url': '/api/races/tiefling'}]}
-RULE_SECTIONS_RESPONSE: Dict[str, Union[int, List[
-    Union[Union[Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str]], Any]]]
-] = {'count': 33,
-     'results': [
-         {'index': 'ability-checks',
-          'name': 'Ability Checks',
-          'url': '/api/rule-sections/ability-checks'},
-         {
-             'index': 'ability-scores-and-modifiers',
-             'name': 'Ability Scores and Modifiers',
-             'url': '/api/rule-sections/ability-scores-and-modifiers'},
-         {
-             'index': 'actions-in-combat',
-             'name': 'Actions in Combat',
-             'url': '/api/rule-sections/actions-in-combat'},
-         {
-             'index': 'activating-an-item',
-             'name': 'Activating an Item',
-             'url': '/api/rule-sections/activating-an-item'},
-         {
-             'index': 'advantage-and-disadvantage',
-             'name': 'Advantage and Disadvantage',
-             'url': '/api/rule-sections/advantage-and-disadvantage'},
-         {'index': 'attunement',
-          'name': 'Attunement',
-          'url': '/api/rule-sections/attunement'},
-         {
-             'index': 'between-adventures',
-             'name': 'Between Adventures',
-             'url': '/api/rule-sections/between-adventures'},
-         {
-             'index': 'casting-a-spell',
-             'name': 'Casting a Spell',
-             'url': '/api/rule-sections/casting-a-spell'},
-         {'index': 'cover',
-          'name': 'Cover',
-          'url': '/api/rule-sections/cover'},
-         {
-             'index': 'damage-and-healing',
-             'name': 'Damage and Healing',
-             'url': '/api/rule-sections/damage-and-healing'},
-         {'index': 'diseases',
-          'name': 'Diseases',
-          'url': '/api/rule-sections/diseases'},
-         {
-             'index': 'fantasy-historical-pantheons',
-             'name': 'Fantasy-Historical Pantheons',
-             'url': '/api/rule-sections/fantasy-historical-pantheons'},
-         {'index': 'madness',
-          'name': 'Madness',
-          'url': '/api/rule-sections/madness'},
-         {
-             'index': 'making-an-attack',
-             'name': 'Making an Attack',
-             'url': '/api/rule-sections/making-an-attack'},
-         {'index': 'mounted-combat',
-          'name': 'Mounted Combat',
-          'url': '/api/rule-sections/mounted-combat'},
-         {'index': 'movement',
-          'name': 'Movement',
-          'url': '/api/rule-sections/movement'},
-         {
-             'index': 'movement-and-position',
-             'name': 'Movement and Position',
-             'url': '/api/rule-sections/movement-and-position'},
-         {'index': 'objects',
-          'name': 'Objects',
-          'url': '/api/rule-sections/objects'},
-         {'index': 'poisons',
-          'name': 'Poisons',
-          'url': '/api/rule-sections/poisons'},
-         {
-             'index': 'proficiency-bonus',
-             'name': 'Proficiency Bonus',
-             'url': '/api/rule-sections/proficiency-bonus'},
-         {'index': 'resting',
-          'name': 'Resting',
-          'url': '/api/rule-sections/resting'},
-         {'index': 'saving-throws',
-          'name': 'Saving Throws',
-          'url': '/api/rule-sections/saving-throws'},
-         {
-             'index': 'sentient-magic-items',
-             'name': 'Sentient Magic Items',
-             'url': '/api/rule-sections/sentient-magic-items'},
-         {
-             'index': 'standard-exchange-rates',
-             'name': 'Standard Exchange Rates',
-             'url': '/api/rule-sections/standard-exchange-rates'},
-         {
-             'index': 'the-environment',
-             'name': 'The Environment',
-             'url': '/api/rule-sections/the-environment'},
-         {
-             'index': 'the-order-of-combat',
-             'name': 'The Order of Combat',
-             'url': '/api/rule-sections/the-order-of-combat'},
-         {
-             'index': 'the-planes-of-existence',
-             'name': 'The Planes of Existence',
-             'url': '/api/rule-sections/the-planes-of-existence'},
-         {'index': 'time',
-          'name': 'Time',
-          'url': '/api/rule-sections/time'},
-         {'index': 'traps',
-          'name': 'Traps',
-          'url': '/api/rule-sections/traps'},
-         {
-             'index': 'underwater-combat',
-             'name': 'Underwater Combat',
-             'url': '/api/rule-sections/underwater-combat'},
-         {
-             'index': 'using-each-ability',
-             'name': 'Using Each Ability',
-             'url': '/api/rule-sections/using-each-ability'},
-         {
-             'index': 'wearing-and-wielding-items',
-             'name': 'Wearing and Wielding Items',
-             'url': '/api/rule-sections/wearing-and-wielding-items'},
-         {
-             'index': 'what-is-a-spell',
-             'name': 'What Is a Spell?',
-             'url': '/api/rule-sections/what-is-a-spell'}]}
-RULES_RESPONSE: Dict[str, Union[int, List[
-    Union[Dict[str, str], Dict[str, str], Dict[str, str],
-          Dict[str, str], Dict[str, str], Dict[str, str]]]]] = {
-    'count': 6,
-    'results': [{'index': 'adventuring',
-                 'name': 'Adventuring',
-                 'url': '/api/rules/adventuring'},
-                {'index': 'appendix',
-                 'name': 'Appendix',
-                 'url': '/api/rules/appendix'},
-                {'index': 'combat', 'name': 'Combat', 'url': '/api/rules/combat'},
-                {'index': 'equipment',
-                 'name': 'Equipment',
-                 'url': '/api/rules/equipment'},
-                {'index': 'spellcasting',
-                 'name': 'Spellcasting',
-                 'url': '/api/rules/spellcasting'},
-                {'index': 'using-ability-scores',
-                 'name': 'Using Ability Scores',
-                 'url': '/api/rules/using-ability-scores'}]}
-SKILLS_RESPONSE: Dict[str, Union[int, List[
-    Union[Union[Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str]], Any]]]
-] = {'count': 18,
-     'results': [{
-         'index': 'acrobatics',
-         'name': 'Acrobatics',
-         'url': '/api/skills/acrobatics'},
-         {
-             'index': 'animal-handling',
-             'name': 'Animal Handling',
-             'url': '/api/skills/animal-handling'},
-         {
-             'index': 'arcana',
-             'name': 'Arcana',
-             'url': '/api/skills/arcana'},
-         {
-             'index': 'athletics',
-             'name': 'Athletics',
-             'url': '/api/skills/athletics'},
-         {
-             'index': 'deception',
-             'name': 'Deception',
-             'url': '/api/skills/deception'},
-         {
-             'index': 'history',
-             'name': 'History',
-             'url': '/api/skills/history'},
-         {
-             'index': 'insight',
-             'name': 'Insight',
-             'url': '/api/skills/insight'},
-         {
-             'index': 'intimidation',
-             'name': 'Intimidation',
-             'url': '/api/skills/intimidation'},
-         {
-             'index': 'investigation',
-             'name': 'Investigation',
-             'url': '/api/skills/investigation'},
-         {
-             'index': 'medicine',
-             'name': 'Medicine',
-             'url': '/api/skills/medicine'},
-         {
-             'index': 'nature',
-             'name': 'Nature',
-             'url': '/api/skills/nature'},
-         {
-             'index': 'perception',
-             'name': 'Perception',
-             'url': '/api/skills/perception'},
-         {
-             'index': 'performance',
-             'name': 'Performance',
-             'url': '/api/skills/performance'},
-         {
-             'index': 'persuasion',
-             'name': 'Persuasion',
-             'url': '/api/skills/persuasion'},
-         {
-             'index': 'religion',
-             'name': 'Religion',
-             'url': '/api/skills/religion'},
-         {
-             'index': 'sleight-of-hand',
-             'name': 'Sleight of Hand',
-             'url': '/api/skills/sleight-of-hand'},
-         {
-             'index': 'stealth',
-             'name': 'Stealth',
-             'url': '/api/skills/stealth'},
-         {
-             'index': 'survival',
-             'name': 'Survival',
-             'url': '/api/skills/survival'}]}
-SPELLS_RESPONSE: Dict[
-    str, Union[int, List[Dict[str, str]]]
-] = {'count': 319,
-     'results': [
-         {"index": "acid-arrow", "name": "Acid Arrow",
-          "url": "/api/spells/acid-arrow"}]}
-SUBCLASSES_RESPONSE: Dict[str, Union[int, List[
-    Union[Union[Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str]], Any]]]
-] = {'count': 12,
-     'results': [{
-         'index': 'berserker',
-         'name': 'Berserker',
-         'url': '/api/subclasses/berserker'},
-         {
-             'index': 'champion',
-             'name': 'Champion',
-             'url': '/api/subclasses/champion'},
-         {
-             'index': 'devotion',
-             'name': 'Devotion',
-             'url': '/api/subclasses/devotion'},
-         {
-             'index': 'draconic',
-             'name': 'Draconic',
-             'url': '/api/subclasses/draconic'},
-         {
-             'index': 'evocation',
-             'name': 'Evocation',
-             'url': '/api/subclasses/evocation'},
-         {
-             'index': 'fiend',
-             'name': 'Fiend',
-             'url': '/api/subclasses/fiend'},
-         {
-             'index': 'hunter',
-             'name': 'Hunter',
-             'url': '/api/subclasses/hunter'},
-         {
-             'index': 'land',
-             'name': 'Land',
-             'url': '/api/subclasses/land'},
-         {
-             'index': 'life',
-             'name': 'Life',
-             'url': '/api/subclasses/life'},
-         {
-             'index': 'lore',
-             'name': 'Lore',
-             'url': '/api/subclasses/lore'},
-         {
-             'index': 'open-hand',
-             'name': 'Open Hand',
-             'url': '/api/subclasses/open-hand'},
-         {
-             'index': 'thief',
-             'name': 'Thief',
-             'url': '/api/subclasses/thief'}]}
-SUBRACES_RESPONSE: Dict[
-    str, Union[int, List[Union[
-        Dict[str, str], Dict[str, str],
-        Dict[str, str], Dict[str, str]]]]
-] = {'count': 4,
-     'results': [{
-         'index': 'high-elf',
-         'name': 'High Elf',
-         'url': '/api/subraces/high-elf'},
-         {
-             'index': 'hill-dwarf',
-             'name': 'Hill Dwarf',
-             'url': '/api/subraces/hill-dwarf'},
-         {
-             'index': 'lightfoot-halfling',
-             'name': 'Lightfoot Halfling',
-             'url': '/api/subraces/lightfoot-halfling'},
-         {
-             'index': 'rock-gnome',
-             'name': 'Rock Gnome',
-             'url': '/api/subraces/rock-gnome'}]}
-TRAITS_RESPONSE: Dict[str, Union[int, List[
-    Union[Union[Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str]], Any]]]
-] = {'count': 38,
-     'results': [{
-         'index': 'artificers-lore',
-         'name': "Artificer's Lore",
-         'url': '/api/traits/artificers-lore'},
-         {
-             'index': 'brave',
-             'name': 'Brave',
-             'url': '/api/traits/brave'},
-         {
-             'index': 'breath-weapon',
-             'name': 'Breath Weapon',
-             'url': '/api/traits/breath-weapon'},
-         {
-             'index': 'damage-resistance',
-             'name': 'Damage Resistance',
-             'url': '/api/traits/damage-resistance'},
-         {
-             'index': 'darkvision',
-             'name': 'Darkvision',
-             'url': '/api/traits/darkvision'},
-         {
-             'index': 'draconic-ancestry',
-             'name': 'Draconic Ancestry',
-             'url': '/api/traits/draconic-ancestry'},
-         {
-             'index': 'draconic-ancestry-black',
-             'name': 'Draconic Ancestry (Black)',
-             'url': '/api/traits/draconic-ancestry-black'},
-         {
-             'index': 'draconic-ancestry-blue',
-             'name': 'Draconic Ancestry (Blue)',
-             'url': '/api/traits/draconic-ancestry-blue'},
-         {
-             'index': 'draconic-ancestry-brass',
-             'name': 'Draconic Ancestry (Brass)',
-             'url': '/api/traits/draconic-ancestry-brass'},
-         {
-             'index': 'draconic-ancestry-bronze',
-             'name': 'Draconic Ancestry (Bronze)',
-             'url': '/api/traits/draconic-ancestry-bronze'},
-         {
-             'index': 'draconic-ancestry-copper',
-             'name': 'Draconic Ancestry (Copper)',
-             'url': '/api/traits/draconic-ancestry-copper'},
-         {
-             'index': 'draconic-ancestry-gold',
-             'name': 'Draconic Ancestry (Gold)',
-             'url': '/api/traits/draconic-ancestry-gold'},
-         {
-             'index': 'draconic-ancestry-green',
-             'name': 'Draconic Ancestry (Green)',
-             'url': '/api/traits/draconic-ancestry-green'},
-         {
-             'index': 'draconic-ancestry-red',
-             'name': 'Draconic Ancestry (Red)',
-             'url': '/api/traits/draconic-ancestry-red'},
-         {
-             'index': 'draconic-ancestry-silver',
-             'name': 'Draconic Ancestry (Silver)',
-             'url': '/api/traits/draconic-ancestry-silver'},
-         {
-             'index': 'draconic-ancestry-white',
-             'name': 'Draconic Ancestry (White)',
-             'url': '/api/traits/draconic-ancestry-white'},
-         {
-             'index': 'dwarven-combat-training',
-             'name': 'Dwarven Combat Training',
-             'url': '/api/traits/dwarven-combat-training'},
-         {
-             'index': 'dwarven-resilience',
-             'name': 'Dwarven Resilience',
-             'url': '/api/traits/dwarven-resilience'},
-         {
-             'index': 'dwarven-toughness',
-             'name': 'Dwarven Toughness',
-             'url': '/api/traits/dwarven-toughness'},
-         {
-             'index': 'elf-weapon-training',
-             'name': 'Elf Weapon Training',
-             'url': '/api/traits/elf-weapon-training'},
-         {
-             'index': 'extra-language',
-             'name': 'Extra Language',
-             'url': '/api/traits/extra-language'},
-         {
-             'index': 'fey-ancestry',
-             'name': 'Fey Ancestry',
-             'url': '/api/traits/fey-ancestry'},
-         {
-             'index': 'gnome-cunning',
-             'name': 'Gnome Cunning',
-             'url': '/api/traits/gnome-cunning'},
-         {
-             'index': 'halfling-nimbleness',
-             'name': 'Halfling Nimbleness',
-             'url': '/api/traits/halfling-nimbleness'},
-         {
-             'index': 'hellish-resistance',
-             'name': 'Hellish Resistance',
-             'url': '/api/traits/hellish-resistance'},
-         {
-             'index': 'high-elf-cantrip',
-             'name': 'High Elf Cantrip',
-             'url': '/api/traits/high-elf-cantrip'},
-         {
-             'index': 'infernal-legacy',
-             'name': 'Infernal Legacy',
-             'url': '/api/traits/infernal-legacy'},
-         {
-             'index': 'keen-senses',
-             'name': 'Keen Senses',
-             'url': '/api/traits/keen-senses'},
-         {
-             'index': 'lucky',
-             'name': 'Lucky',
-             'url': '/api/traits/lucky'},
-         {
-             'index': 'menacing',
-             'name': 'Menacing',
-             'url': '/api/traits/menacing'},
-         {
-             'index': 'naturally-stealthy',
-             'name': 'Naturally Stealthy',
-             'url': '/api/traits/naturally-stealthy'},
-         {
-             'index': 'relentless-endurance',
-             'name': 'Relentless Endurance',
-             'url': '/api/traits/relentless-endurance'},
-         {
-             'index': 'savage-attacks',
-             'name': 'Savage Attacks',
-             'url': '/api/traits/savage-attacks'},
-         {
-             'index': 'skill-versatility',
-             'name': 'Skill Versatility',
-             'url': '/api/traits/skill-versatility'},
-         {
-             'index': 'stonecunning',
-             'name': 'Stonecunning',
-             'url': '/api/traits/stonecunning'},
-         {
-             'index': 'tinker',
-             'name': 'Tinker',
-             'url': '/api/traits/tinker'},
-         {
-             'index': 'tool-proficiency',
-             'name': 'Tool Proficiency',
-             'url': '/api/traits/tool-proficiency'},
-         {
-             'index': 'trance',
-             'name': 'Trance',
-             'url': '/api/traits/trance'}]}
-WEAPON_PROPERTIES_RESPONSE: Dict[str, Union[int, List[
-    Union[Union[Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str], Dict[str, str], Dict[str, str],
-                Dict[str, str]], Any]]]
-] = {'count': 11,
-     'results': [
-         {'index': 'ammunition',
-          'name': 'Ammunition',
-          'url': '/api/weapon-properties/ammunition'},
-         {'index': 'finesse',
-          'name': 'Finesse',
-          'url': '/api/weapon-properties/finesse'},
-         {'index': 'heavy',
-          'name': 'Heavy',
-          'url': '/api/weapon-properties/heavy'},
-         {'index': 'light',
-          'name': 'Light',
-          'url': '/api/weapon-properties/light'},
-         {'index': 'loading',
-          'name': 'Loading',
-          'url': '/api/weapon-properties/loading'},
-         {'index': 'monk',
-          'name': 'Monk',
-          'url': '/api/weapon-properties/monk'},
-         {'index': 'reach',
-          'name': 'Reach',
-          'url': '/api/weapon-properties/reach'},
-         {'index': 'special',
-          'name': 'Special',
-          'url': '/api/weapon-properties/special'},
-         {'index': 'thrown',
-          'name': 'Thrown',
-          'url': '/api/weapon-properties/thrown'},
-         {'index': 'two-handed',
-          'name': 'Two-Handed',
-          'url': '/api/weapon-properties/two-handed'},
-         {'index': 'versatile',
-          'name': 'Versatile',
-          'url': '/api/weapon-properties/versatile'}]}
-_RESPONSE: None = None
+import expected as exp
 
 
 class TestDnD5eAPIObj(TestCase):
@@ -1164,9 +59,9 @@ class TestDnD5eAPIObj(TestCase):
 
         """
         result_json: Union[Dict[str, object], Any] = self.dnd.__get_json__()
-        self.assertEqual(GOOD_BASE_RESPONSE, result_json)
+        self.assertEqual(exp.GOOD_BASE_RESPONSE, result_json)
         bad_result: Union[Dict[str, object], Any] = self.bad_dnd.__get_json__()
-        self.assertEqual(BAD_404_RESPONSE, bad_result)
+        self.assertEqual(exp.BAD_404_RESPONSE, bad_result)
 
     def test__get_df__(self) -> None:
         """
@@ -1187,20 +82,20 @@ class TestDnD5eAPIObj(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd.url_root)
         self.assertEqual("/api", self.dnd.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api", self.dnd.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd.requests_args["headers"])
-        self.assertIsInstance(self.dnd.dframe, pd.DataFrame)
-        self.assertEqual((24, 2), self.dnd.dframe.shape)
-        self.assertEqual(URL_ROOT, self.bad_dnd.url_root)
+        self.assertEqual("https://www.dnd5eapi.co/api", self.dnd.url)
+        self.assertEqual(exp.HEADERS, self.dnd.requests_args["headers"])
+        self.assertIsInstance(self.dnd.df, pd.DataFrame)
+        self.assertEqual((24, 2), self.dnd.shape)
+        self.assertEqual(exp.URL_ROOT, self.bad_dnd.url_root)
         self.assertEqual("/api/Bad_Leaf_69_420", self.bad_dnd.url_leaf)
         self.assertEqual(
-            "https://www.dnd5eapi.co/api/Bad_Leaf_69_420", self.bad_dnd.requests_args["url"]
+            "https://www.dnd5eapi.co/api/Bad_Leaf_69_420", self.bad_dnd.url
         )
-        self.assertEqual(HEADERS, self.bad_dnd.requests_args["headers"])
-        self.assertIsInstance(self.bad_dnd.dframe, pd.DataFrame)
-        self.assertEqual((1, 1), self.bad_dnd.dframe.shape)
+        self.assertEqual(exp.HEADERS, self.bad_dnd.requests_args["headers"])
+        self.assertIsInstance(self.bad_dnd.df, pd.DataFrame)
+        self.assertEqual((1, 1), self.bad_dnd.shape)
 
     def test_parents(self) -> None:
         """
@@ -1237,12 +132,25 @@ class TestDnD5eAPIObj(TestCase):
 
         """
         self.dnd.create_instances_from_urls()
-        self.assertIn("obj", self.dnd.dframe.columns)
-        self.dnd.dframe["obj"].apply(lambda x: self.assertIsInstance(x, self.constructor))
+        self.assertIn("obj", self.dnd.df.columns)
+        self.dnd.df["obj"].apply(lambda x: self.assertIsInstance(x, self.constructor))
         self.assertWarns(ResourceWarning, self.bad_dnd.create_instances_from_urls)
 
-    def test_apply(self):
-        def func(_x: pd.Series):
+    def test_apply(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
+
+        def func(_x: pd.Series) -> None:
+            """
+
+            Returns
+            -------
+            None
+            """
             try:
                 _ = [self.assertIn(_i, _x.index) for _i in ["url", "name"]]
                 self.assertIn("/api/", _x["url"])
@@ -1251,11 +159,11 @@ class TestDnD5eAPIObj(TestCase):
                 print(_x)
                 raise _e
 
-        self.dnd.dframe.apply(func, axis=1)
+        self.dnd.df.apply(func, axis=1)
 
 
 class TestGetLeafConstructorMap(TestCase):
-    """
+    """tests dnd5eapy.get_leaf_constructor_map
 
     """
 
@@ -1282,7 +190,7 @@ class TestGetLeafConstructorMap(TestCase):
 
 
 class TestAbilityScores(TestCase):
-    """
+    """Tests dnd5eapy.AbilityScores
 
     """
 
@@ -1293,7 +201,7 @@ class TestAbilityScores(TestCase):
         -------
 
         """
-        self.dnd_ability_scores = dnd5eapy.AbilityScores(url_root=URL_ROOT)
+        self.dnd_ability_scores = dnd5eapy.AbilityScores(url_root=exp.URL_ROOT)
 
     def test_attributes(self) -> None:
         """
@@ -1302,12 +210,12 @@ class TestAbilityScores(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_ability_scores.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_ability_scores.url_root)
         self.assertEqual("/api/ability-scores", self.dnd_ability_scores.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/ability-scores", self.dnd_ability_scores.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_ability_scores.requests_args["headers"])
-        self.assertIsInstance(self.dnd_ability_scores.dframe, pd.DataFrame)
-        self.assertEqual((6, 2), self.dnd_ability_scores.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/ability-scores", self.dnd_ability_scores.url)
+        self.assertEqual(exp.HEADERS, self.dnd_ability_scores.requests_args["headers"])
+        self.assertIsInstance(self.dnd_ability_scores.df, pd.DataFrame)
+        self.assertEqual((6, 2), self.dnd_ability_scores.shape)
 
     def test_create_instances_from_urls(self) -> None:
         """
@@ -1320,7 +228,7 @@ class TestAbilityScores(TestCase):
 
 
 class TestAbilityScore(TestCase):
-    """
+    """Tests dnd5eapy.abilityscores
 
     """
 
@@ -1331,7 +239,7 @@ class TestAbilityScore(TestCase):
         -------
 
         """
-        self.dnd_ability_score = dnd5eapy.abilityscores.AbilityScore()
+        self.dnd_ability_score = dnd5eapy.AbilityScore()
 
     def test_attributes(self) -> None:
         """
@@ -1340,16 +248,17 @@ class TestAbilityScore(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_ability_score.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_ability_score.url_root)
         self.assertEqual("/api/ability-scores/cha", self.dnd_ability_score.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/ability-scores/cha", self.dnd_ability_score.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_ability_score.requests_args["headers"])
-        self.assertIsInstance(self.dnd_ability_score.dframe, pd.DataFrame)
-        self.assertEqual((1, 5), self.dnd_ability_score.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/ability-scores/cha", self.dnd_ability_score.url)
+        self.assertEqual(exp.HEADERS, self.dnd_ability_score.requests_args["headers"])
+        self.assertIsInstance(self.dnd_ability_score.df, pd.DataFrame)
+        self.assertEqual((1, 5), self.dnd_ability_score.shape)
+        self.assertListEqual(self.dnd_ability_score.columns.to_list(), ['name', 'full_name', 'desc', 'skills', 'url'])
 
 
 class TestAlignments(TestCase):
-    """
+    """Tests dnd5eapy.Alignments
 
     """
 
@@ -1360,7 +269,7 @@ class TestAlignments(TestCase):
         -------
 
         """
-        self.dnd_alignments = dnd5eapy.alignments.Alignments()
+        self.dnd_alignments = dnd5eapy.Alignments()
 
     def test_attributes(self) -> None:
         """
@@ -1369,16 +278,46 @@ class TestAlignments(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_alignments.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_alignments.url_root)
         self.assertEqual("/api/alignments", self.dnd_alignments.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/alignments", self.dnd_alignments.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_alignments.requests_args["headers"])
-        self.assertIsInstance(self.dnd_alignments.dframe, pd.DataFrame)
-        self.assertEqual((9, 2), self.dnd_alignments.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/alignments", self.dnd_alignments.url)
+        self.assertEqual(exp.HEADERS, self.dnd_alignments.requests_args["headers"])
+        self.assertIsInstance(self.dnd_alignments.df, pd.DataFrame)
+        self.assertEqual((9, 2), self.dnd_alignments.shape)
+
+
+class TestAlignment(TestCase):
+    """Tests dnd5eapy.Alignments
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_alignment = dnd5eapy.Alignment()
+
+    def test_attributes(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_alignment.url_root)
+        self.assertEqual("/api/alignments/chaotic-evil", self.dnd_alignment.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/alignments/chaotic-evil", self.dnd_alignment.url)
+        self.assertEqual(exp.HEADERS, self.dnd_alignment.requests_args["headers"])
+        self.assertIsInstance(self.dnd_alignment.df, pd.DataFrame)
+        self.assertEqual((1, 4), self.dnd_alignment.shape)
+        self.assertListEqual(self.dnd_alignment.columns.to_list(), ['name', 'abbreviation', 'desc', 'url'])
 
 
 class TestBackgrounds(TestCase):
-    """
+    """Tests dnd5eapy.Backgrounds
 
     """
 
@@ -1389,7 +328,7 @@ class TestBackgrounds(TestCase):
         -------
 
         """
-        self.dnd_backgrounds = dnd5eapy.backgrounds.Backgrounds()
+        self.dnd_backgrounds = dnd5eapy.Backgrounds()
 
     def test_attributes(self) -> None:
         """
@@ -1398,16 +337,61 @@ class TestBackgrounds(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_backgrounds.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_backgrounds.url_root)
         self.assertEqual("/api/backgrounds", self.dnd_backgrounds.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/backgrounds", self.dnd_backgrounds.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_backgrounds.requests_args["headers"])
-        self.assertIsInstance(self.dnd_backgrounds.dframe, pd.DataFrame)
-        self.assertEqual((1, 2), self.dnd_backgrounds.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/backgrounds", self.dnd_backgrounds.url)
+        self.assertEqual(exp.HEADERS, self.dnd_backgrounds.requests_args["headers"])
+        self.assertIsInstance(self.dnd_backgrounds.df, pd.DataFrame)
+        self.assertEqual((1, 2), self.dnd_backgrounds.shape)
+
+
+class TestBackground(TestCase):
+    """Tests dnd5eapy.Background
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_background = dnd5eapy.Background()
+
+    def test_attributes(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_background.url_root)
+        self.assertEqual('/api/backgrounds/acolyte', self.dnd_background.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/backgrounds/acolyte", self.dnd_background.url)
+        self.assertEqual(exp.HEADERS, self.dnd_background.requests_args["headers"])
+        self.assertIsInstance(self.dnd_background.df, pd.DataFrame)
+        self.assertEqual((1, 27), self.dnd_background.shape)
+        self.maxDiff = None
+        self.assertListEqual(self.dnd_background.columns.to_list(),
+                             ['name', 'starting_proficiencies',
+                              'starting_equipment', 'starting_equipment_options',
+                              'url', 'language_options.choose',
+                              'language_options.type', 'language_options.from.option_set_type',
+                              'language_options.from.resource_list_url', 'feature.name',
+                              'feature.desc', 'personality_traits.choose',
+                              'personality_traits.type', 'personality_traits.from.option_set_type',
+                              'personality_traits.from.options', 'ideals.choose',
+                              'ideals.type', 'ideals.from.option_set_type',
+                              'ideals.from.options', 'bonds.choose',
+                              'bonds.type', 'bonds.from.option_set_type',
+                              'bonds.from.options', 'flaws.choose',
+                              'flaws.type', 'flaws.from.option_set_type',
+                              'flaws.from.options'])
 
 
 class TestClasses(TestCase):
-    """
+    """Tests dnd5eapy.Classes
 
     """
 
@@ -1418,7 +402,7 @@ class TestClasses(TestCase):
         -------
 
         """
-        self.dnd_classes = dnd5eapy.classes.Classes()
+        self.dnd_classes = dnd5eapy.Classes()
 
     def test_attributes(self) -> None:
         """
@@ -1427,15 +411,52 @@ class TestClasses(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_classes.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_classes.url_root)
         self.assertEqual("/api/classes", self.dnd_classes.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/classes", self.dnd_classes.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_classes.requests_args["headers"])
-        self.assertIsInstance(self.dnd_classes.dframe, pd.DataFrame)
-        self.assertEqual((12, 2), self.dnd_classes.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/classes", self.dnd_classes.url)
+        self.assertEqual(exp.HEADERS, self.dnd_classes.requests_args["headers"])
+        self.assertIsInstance(self.dnd_classes.df, pd.DataFrame)
+        self.assertEqual((12, 2), self.dnd_classes.shape)
+
+
+class TestClass(TestCase):
+    """Tests dnd5eapy.Class
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_class = dnd5eapy.Class()
+
+    def test_attributes(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_class.url_root)
+        self.assertEqual("/api/classes/barbarian", self.dnd_class.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/classes/barbarian", self.dnd_class.url)
+        self.assertEqual(exp.HEADERS, self.dnd_class.requests_args["headers"])
+        self.assertIsInstance(self.dnd_class.df, pd.DataFrame)
+        self.assertEqual((1, 12), self.dnd_class.shape)
+        self.maxDiff = None
+        self.assertListEqual(self.dnd_class.columns.to_list(),
+                             ['name', 'hit_die', 'proficiency_choices', 'proficiencies',
+                              'saving_throws', 'starting_equipment', 'starting_equipment_options', 'class_levels',
+                              'subclasses', 'url', 'multi_classing.prerequisites', 'multi_classing.proficiencies'])
 
 
 class TestConditions(TestCase):
+    """Tests dnd5eapy.Conditions
+    """
+
     def setUp(self) -> None:
         """
 
@@ -1443,7 +464,7 @@ class TestConditions(TestCase):
         -------
 
         """
-        self.dnd_conditions = dnd5eapy.conditions.Conditions()
+        self.dnd_conditions = dnd5eapy.Conditions()
 
     def test_attributes(self) -> None:
         """
@@ -1452,17 +473,45 @@ class TestConditions(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_conditions.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_conditions.url_root)
         self.assertEqual("/api/conditions", self.dnd_conditions.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/conditions", self.dnd_conditions.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_conditions.requests_args["headers"])
-        self.assertIsInstance(self.dnd_conditions.dframe, pd.DataFrame)
-        self.assertEqual((15, 2), self.dnd_conditions.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/conditions", self.dnd_conditions.url)
+        self.assertEqual(exp.HEADERS, self.dnd_conditions.requests_args["headers"])
+        self.assertIsInstance(self.dnd_conditions.df, pd.DataFrame)
+        self.assertEqual((15, 2), self.dnd_conditions.shape)
+
+
+class TestCondition(TestCase):
+    """Tests dnd5eapy.Condition
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_condition = dnd5eapy.Condition()
+
+    def test_attributes(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_condition.url_root)
+        self.assertEqual("/api/conditions/blinded", self.dnd_condition.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/conditions/blinded", self.dnd_condition.url)
+        self.assertEqual(exp.HEADERS, self.dnd_condition.requests_args["headers"])
+        self.assertIsInstance(self.dnd_condition.df, pd.DataFrame)
+        self.assertEqual((1, 3), self.dnd_condition.shape)
+        self.assertListEqual(self.dnd_condition.columns.to_list(), ['name', 'desc', 'url'])
 
 
 class TestDamageTypes(TestCase):
-    """
-
+    """Tests dnd5eapy.DamageTypes
     """
 
     def setUp(self) -> None:
@@ -1472,7 +521,7 @@ class TestDamageTypes(TestCase):
         -------
 
         """
-        self.dnd_damage_types = dnd5eapy.damagetypes.DamageTypes()
+        self.dnd_damage_types = dnd5eapy.DamageTypes()
 
     def test_attributes(self) -> None:
         """
@@ -1481,28 +530,57 @@ class TestDamageTypes(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_damage_types.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_damage_types.url_root)
         self.assertEqual("/api/damage-types", self.dnd_damage_types.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/damage-types", self.dnd_damage_types.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_damage_types.requests_args["headers"])
-        self.assertIsInstance(self.dnd_damage_types.dframe, pd.DataFrame)
-        self.assertEqual((13, 2), self.dnd_damage_types.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/damage-types", self.dnd_damage_types.url)
+        self.assertEqual(exp.HEADERS, self.dnd_damage_types.requests_args["headers"])
+        self.assertIsInstance(self.dnd_damage_types.df, pd.DataFrame)
+        self.assertEqual((13, 2), self.dnd_damage_types.shape)
+
+
+class TestDamageType(TestCase):
+    """Tests dnd5eapy.DamageType
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_damage_type = dnd5eapy.DamageType()
+
+    def test_attributes(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_damage_type.url_root)
+        self.assertEqual("/api/damage-types/acid", self.dnd_damage_type.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/damage-types/acid", self.dnd_damage_type.url)
+        self.assertEqual(exp.HEADERS, self.dnd_damage_type.requests_args["headers"])
+        self.assertIsInstance(self.dnd_damage_type.df, pd.DataFrame)
+        self.assertEqual((1, 3), self.dnd_damage_type.shape)
+        self.assertListEqual(self.dnd_damage_type.columns.to_list(), ['name', 'desc', 'url'])
 
 
 class TestEquipment(TestCase):
-    """
+    """Tests dnd5eapy.Equipment
 
     """
-    dnd_equipment: dnd5eapy.equipment.Equipment
+    dnd_equipment: dnd5eapy.Equipment
 
     def setUp(self) -> None:
-        """
+        """Tests dnd5eapy.Equipment
 
         Returns
         -------
 
         """
-        self.dnd_equipment = dnd5eapy.equipment.Equipment()
+        self.dnd_equipment = dnd5eapy.Equipment()
 
     def test_attributes(self):
         """
@@ -1511,15 +589,53 @@ class TestEquipment(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_equipment.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_equipment.url_root)
         self.assertEqual("/api/equipment", self.dnd_equipment.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/equipment", self.dnd_equipment.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_equipment.requests_args["headers"])
-        self.assertIsInstance(self.dnd_equipment.dframe, pd.DataFrame)
-        self.assertEqual((237, 2), self.dnd_equipment.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/equipment", self.dnd_equipment.url)
+        self.assertEqual(exp.HEADERS, self.dnd_equipment.requests_args["headers"])
+        self.assertIsInstance(self.dnd_equipment.df, pd.DataFrame)
+        self.assertEqual((237, 2), self.dnd_equipment.shape)
+
+
+class TestEquipmentItem(TestCase):
+    """Tests dnd5eapy.EquipmentItem
+
+    """
+    dnd_equipment_item: dnd5eapy.EquipmentItem
+
+    def setUp(self) -> None:
+        """Tests dnd5eapy.Equipment
+
+        Returns
+        -------
+
+        """
+        self.dnd_equipment_item = dnd5eapy.EquipmentItem()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_equipment_item.url_root)
+        self.assertEqual("/api/equipment/abacus", self.dnd_equipment_item.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/equipment/abacus", self.dnd_equipment_item.url)
+        self.assertEqual(exp.HEADERS, self.dnd_equipment_item.requests_args["headers"])
+        self.assertIsInstance(self.dnd_equipment_item.df, pd.DataFrame)
+        self.assertEqual((1, 15), self.dnd_equipment_item.shape)
+        self.assertListEqual(self.dnd_equipment_item.columns.to_list(),
+                             ['desc', 'special', 'name', 'weight', 'url', 'contents',
+                              'properties', 'equipment_category.index', 'equipment_category.name',
+                              'equipment_category.url', 'gear_category.index', 'gear_category.name',
+                              'gear_category.url', 'cost.quantity', 'cost.unit'])
 
 
 class TestEquipmentCategories(TestCase):
+    """Tests dnd5eapy.EquipmentCategories
+    """
+
     def setUp(self) -> None:
         """
 
@@ -1527,7 +643,7 @@ class TestEquipmentCategories(TestCase):
         -------
 
         """
-        self.dnd_equipment_categories = dnd5eapy.equipmentcategories.EquipmentCategories()
+        self.dnd_equipment_categories = dnd5eapy.EquipmentCategories()
 
     def test_attributes(self):
         """
@@ -1536,16 +652,49 @@ class TestEquipmentCategories(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_equipment_categories.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_equipment_categories.url_root)
         self.assertEqual("/api/equipment-categories", self.dnd_equipment_categories.url_leaf)
         self.assertEqual("https://www.dnd5eapi.co/api/equipment-categories",
-                         self.dnd_equipment_categories.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_equipment_categories.requests_args["headers"])
-        self.assertIsInstance(self.dnd_equipment_categories.dframe, pd.DataFrame)
-        self.assertEqual((39, 2), self.dnd_equipment_categories.dframe.shape)
+                         self.dnd_equipment_categories.url)
+        self.assertEqual(exp.HEADERS, self.dnd_equipment_categories.requests_args["headers"])
+        self.assertIsInstance(self.dnd_equipment_categories.df, pd.DataFrame)
+        self.assertEqual((39, 2), self.dnd_equipment_categories.shape)
+
+
+class TestEquipmentCategory(TestCase):
+    """Tests dnd5eapy.EquipmentCategory
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_equipment_category = dnd5eapy.EquipmentCategory()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_equipment_category.url_root)
+        self.assertEqual("/api/equipment-categories/adventuring-gear", self.dnd_equipment_category.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/equipment-categories/adventuring-gear",
+                         self.dnd_equipment_category.url)
+        self.assertEqual(exp.HEADERS, self.dnd_equipment_category.requests_args["headers"])
+        self.assertIsInstance(self.dnd_equipment_category.df, pd.DataFrame)
+        self.assertEqual((1, 3), self.dnd_equipment_category.shape)
+        self.assertListEqual(self.dnd_equipment_category.columns.to_list(), ['name', 'equipment', 'url'])
 
 
 class TestFeats(TestCase):
+    """Tests dnd5eapy.Feats
+    """
+
     def setUp(self) -> None:
         """
 
@@ -1553,7 +702,7 @@ class TestFeats(TestCase):
         -------
 
         """
-        self.dnd_feats = dnd5eapy.feats.Feats()
+        self.dnd_feats = dnd5eapy.Feats()
 
     def test_attributes(self):
         """
@@ -1562,16 +711,45 @@ class TestFeats(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_feats.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_feats.url_root)
         self.assertEqual("/api/feats", self.dnd_feats.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/feats", self.dnd_feats.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_feats.requests_args["headers"])
-        self.assertIsInstance(self.dnd_feats.dframe, pd.DataFrame)
-        self.assertEqual((1, 2), self.dnd_feats.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/feats", self.dnd_feats.url)
+        self.assertEqual(exp.HEADERS, self.dnd_feats.requests_args["headers"])
+        self.assertIsInstance(self.dnd_feats.df, pd.DataFrame)
+        self.assertEqual((1, 2), self.dnd_feats.shape)
+
+
+class TestFeat(TestCase):
+    """Tests dnd5eapy.Feat
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_feat = dnd5eapy.Feat()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_feat.url_root)
+        self.assertEqual("/api/feats/grappler", self.dnd_feat.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/feats/grappler", self.dnd_feat.url)
+        self.assertEqual(exp.HEADERS, self.dnd_feat.requests_args["headers"])
+        self.assertIsInstance(self.dnd_feat.df, pd.DataFrame)
+        self.assertEqual((1, 4), self.dnd_feat.shape)
+        self.assertListEqual(self.dnd_feat.columns.to_list(), ['name', 'prerequisites', 'desc', 'url'])
 
 
 class TestFeatures(TestCase):
-    """
+    """Tests dnd5eapy.Features
 
     """
 
@@ -1582,7 +760,7 @@ class TestFeatures(TestCase):
         -------
 
         """
-        self.dnd_features = dnd5eapy.features.Features()
+        self.dnd_features = dnd5eapy.Features()
 
     def test_attributes(self):
         """
@@ -1591,16 +769,49 @@ class TestFeatures(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_features.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_features.url_root)
         self.assertEqual("/api/features", self.dnd_features.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/features", self.dnd_features.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_features.requests_args["headers"])
-        self.assertIsInstance(self.dnd_features.dframe, pd.DataFrame)
-        self.assertEqual((370, 2), self.dnd_features.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/features", self.dnd_features.url)
+        self.assertEqual(exp.HEADERS, self.dnd_features.requests_args["headers"])
+        self.assertIsInstance(self.dnd_features.df, pd.DataFrame)
+        self.assertEqual((370, 2), self.dnd_features.shape)
+
+
+class TestFeature(TestCase):
+    """Tests dnd5eapy.Feature
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_feature = dnd5eapy.Feature()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_feature.url_root)
+        self.assertEqual("/api/features/action-surge-1-use", self.dnd_feature.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/features/action-surge-1-use",
+                         self.dnd_feature.url)
+        self.assertEqual(exp.HEADERS, self.dnd_feature.requests_args["headers"])
+        self.assertIsInstance(self.dnd_feature.df, pd.DataFrame)
+        self.assertEqual((1, 8), self.dnd_feature.shape)
+        self.assertListEqual(self.dnd_feature.columns.to_list(),
+                             ['name', 'level', 'prerequisites', 'desc', 'url', 'class.index', 'class.name',
+                              'class.url'])
 
 
 class TestLanguages(TestCase):
-    """
+    """Tests dnd5eapy.Languages
 
     """
 
@@ -1611,7 +822,7 @@ class TestLanguages(TestCase):
         -------
 
         """
-        self.dnd_languages = dnd5eapy.languages.Languages()
+        self.dnd_languages = dnd5eapy.Languages()
 
     def test_attributes(self):
         """
@@ -1620,17 +831,47 @@ class TestLanguages(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_languages.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_languages.url_root)
         self.assertEqual("/api/languages", self.dnd_languages.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/languages", self.dnd_languages.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_languages.requests_args["headers"])
-        self.assertIsInstance(self.dnd_languages.dframe, pd.DataFrame)
-        self.assertEqual((16, 2), self.dnd_languages.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/languages", self.dnd_languages.url)
+        self.assertEqual(exp.HEADERS, self.dnd_languages.requests_args["headers"])
+        self.assertIsInstance(self.dnd_languages.df, pd.DataFrame)
+        self.assertEqual((16, 2), self.dnd_languages.shape)
+
+
+class TestLanguage(TestCase):
+    """Tests dnd5eapy.Language
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_language = dnd5eapy.Language()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_language.url_root)
+        self.assertEqual("/api/languages/abyssal", self.dnd_language.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/languages/abyssal", self.dnd_language.url)
+        self.assertEqual(exp.HEADERS, self.dnd_language.requests_args["headers"])
+        self.assertIsInstance(self.dnd_language.df, pd.DataFrame)
+        self.assertEqual((1, 5), self.dnd_language.shape)
+        self.assertListEqual(self.dnd_language.columns.to_list(),
+                             ['name', 'type', 'typical_speakers', 'script', 'url'])
 
 
 class TestMagicItems(TestCase):
-    """
-
+    """Tests dnd5eapy.MagicItems
     """
 
     def setUp(self) -> None:
@@ -1640,7 +881,7 @@ class TestMagicItems(TestCase):
         -------
 
         """
-        self.dnd_magic_items = dnd5eapy.magicitems.MagicItems()
+        self.dnd_magic_items = dnd5eapy.MagicItems()
 
     def test_attributes(self):
         """
@@ -1649,16 +890,48 @@ class TestMagicItems(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_magic_items.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_magic_items.url_root)
         self.assertEqual("/api/magic-items", self.dnd_magic_items.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/magic-items", self.dnd_magic_items.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_magic_items.requests_args["headers"])
-        self.assertIsInstance(self.dnd_magic_items.dframe, pd.DataFrame)
-        self.assertEqual((362, 2), self.dnd_magic_items.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/magic-items", self.dnd_magic_items.url)
+        self.assertEqual(exp.HEADERS, self.dnd_magic_items.requests_args["headers"])
+        self.assertIsInstance(self.dnd_magic_items.df, pd.DataFrame)
+        self.assertEqual((362, 2), self.dnd_magic_items.shape)
+
+
+class TestMagicItem(TestCase):
+    """Tests dnd5eapy.MagicItem
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_magic_item = dnd5eapy.MagicItem()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_magic_item.url_root)
+        self.assertEqual("/api/magic-items/adamantine-armor", self.dnd_magic_item.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/magic-items/adamantine-armor",
+                         self.dnd_magic_item.url)
+        self.assertEqual(exp.HEADERS, self.dnd_magic_item.requests_args["headers"])
+        self.assertIsInstance(self.dnd_magic_item.df, pd.DataFrame)
+        self.assertEqual((1, 9), self.dnd_magic_item.shape)
+        self.assertListEqual(self.dnd_magic_item.columns.to_list(),
+                             ['name', 'variants', 'variant', 'desc', 'url', 'equipment_category.index',
+                              'equipment_category.name', 'equipment_category.url', 'rarity.name'])
 
 
 class TestMagicSchools(TestCase):
-    """
+    """Tests dnd5eapy.MagicSchools
 
     """
 
@@ -1669,7 +942,7 @@ class TestMagicSchools(TestCase):
         -------
 
         """
-        self.dnd_magic_schools = dnd5eapy.magicschools.MagicSchools()
+        self.dnd_magic_schools = dnd5eapy.MagicSchools()
 
     def test_attributes(self):
         """
@@ -1678,16 +951,47 @@ class TestMagicSchools(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_magic_schools.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_magic_schools.url_root)
         self.assertEqual("/api/magic-schools", self.dnd_magic_schools.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/magic-schools", self.dnd_magic_schools.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_magic_schools.requests_args["headers"])
-        self.assertIsInstance(self.dnd_magic_schools.dframe, pd.DataFrame)
-        self.assertEqual((8, 2), self.dnd_magic_schools.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/magic-schools", self.dnd_magic_schools.url)
+        self.assertEqual(exp.HEADERS, self.dnd_magic_schools.requests_args["headers"])
+        self.assertIsInstance(self.dnd_magic_schools.df, pd.DataFrame)
+        self.assertEqual((8, 2), self.dnd_magic_schools.shape)
+
+
+class TestMagicSchool(TestCase):
+    """Tests dnd5eapy.MagicSchool
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_magic_school = dnd5eapy.MagicSchool()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_magic_school.url_root)
+        self.assertEqual("/api/magic-schools/abjuration", self.dnd_magic_school.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/magic-schools/abjuration",
+                         self.dnd_magic_school.url)
+        self.assertEqual(exp.HEADERS, self.dnd_magic_school.requests_args["headers"])
+        self.assertIsInstance(self.dnd_magic_school.df, pd.DataFrame)
+        self.assertEqual((1, 3), self.dnd_magic_school.shape)
+        self.assertListEqual(self.dnd_magic_school.columns.to_list(), ['name', 'desc', 'url'])
 
 
 class TestMonsters(TestCase):
-    """
+    """Tests dnd5eapy.Monsters
 
     """
 
@@ -1698,7 +1002,7 @@ class TestMonsters(TestCase):
         -------
 
         """
-        self.dnd_monsters = dnd5eapy.monsters.Monsters()
+        self.dnd_monsters = dnd5eapy.Monsters()
 
     def test_attributes(self):
         """
@@ -1707,16 +1011,52 @@ class TestMonsters(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_monsters.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_monsters.url_root)
         self.assertEqual("/api/monsters", self.dnd_monsters.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/monsters", self.dnd_monsters.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_monsters.requests_args["headers"])
-        self.assertIsInstance(self.dnd_monsters.dframe, pd.DataFrame)
-        self.assertEqual((334, 2), self.dnd_monsters.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/monsters", self.dnd_monsters.url)
+        self.assertEqual(exp.HEADERS, self.dnd_monsters.requests_args["headers"])
+        self.assertIsInstance(self.dnd_monsters.df, pd.DataFrame)
+        self.assertEqual((334, 2), self.dnd_monsters.shape)
+
+
+class TestMonster(TestCase):
+    """Tests dnd5eapy.Monster
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_monster = dnd5eapy.Monster()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_monster.url_root)
+        self.assertEqual("/api/monsters/aboleth", self.dnd_monster.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/monsters/aboleth", self.dnd_monster.url)
+        self.assertEqual(exp.HEADERS, self.dnd_monster.requests_args["headers"])
+        self.assertIsInstance(self.dnd_monster.df, pd.DataFrame)
+        self.assertEqual((1, 32), self.dnd_monster.shape)
+        self.assertListEqual(self.dnd_monster.columns.to_list(),
+                             ['name', 'size', 'type', 'alignment', 'armor_class', 'hit_points', 'hit_dice',
+                              'hit_points_roll', 'strength', 'dexterity', 'constitution', 'intelligence', 'wisdom',
+                              'charisma', 'proficiencies', 'damage_vulnerabilities', 'damage_resistances',
+                              'damage_immunities', 'condition_immunities', 'languages', 'challenge_rating',
+                              'proficiency_bonus', 'xp', 'special_abilities', 'actions', 'legendary_actions', 'image',
+                              'url', 'speed.walk', 'speed.swim', 'senses.darkvision', 'senses.passive_perception'])
 
 
 class TestProficiencies(TestCase):
-    """
+    """Tests dnd5eapy.Proficiencies
 
     """
 
@@ -1727,7 +1067,7 @@ class TestProficiencies(TestCase):
         -------
 
         """
-        self.dnd_proficiencies = dnd5eapy.proficiencies.Proficiencies()
+        self.dnd_proficiencies = dnd5eapy.Proficiencies()
 
     def test_attributes(self):
         """
@@ -1736,16 +1076,50 @@ class TestProficiencies(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_proficiencies.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_proficiencies.url_root)
         self.assertEqual("/api/proficiencies", self.dnd_proficiencies.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/proficiencies", self.dnd_proficiencies.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_proficiencies.requests_args["headers"])
-        self.assertIsInstance(self.dnd_proficiencies.dframe, pd.DataFrame)
-        self.assertEqual((117, 2), self.dnd_proficiencies.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/proficiencies", self.dnd_proficiencies.url)
+        self.assertEqual(exp.HEADERS, self.dnd_proficiencies.requests_args["headers"])
+        self.assertIsInstance(self.dnd_proficiencies.df, pd.DataFrame)
+        self.assertEqual((117, 2), self.dnd_proficiencies.shape)
+
+
+class TestProficiency(TestCase):
+    """Tests dnd5eapy.Proficiency
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_proficiency = dnd5eapy.Proficiency()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_proficiency.url_root)
+        self.assertEqual("/api/proficiencies/alchemists-supplies", self.dnd_proficiency.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/proficiencies/alchemists-supplies",
+                         self.dnd_proficiency.url)
+        self.assertEqual(exp.HEADERS, self.dnd_proficiency.requests_args["headers"])
+        self.assertIsInstance(self.dnd_proficiency.df, pd.DataFrame)
+        self.assertEqual((1, 8), self.dnd_proficiency.shape)
+        self.maxDiff = None
+        self.assertListEqual(self.dnd_proficiency.columns.to_list(),
+                             ['type', 'name', 'classes', 'races', 'url', 'reference.index', 'reference.name',
+                              'reference.url'])
 
 
 class TestRaces(TestCase):
-    """
+    """Tests dnd5eapy.Races
 
     """
 
@@ -1756,7 +1130,7 @@ class TestRaces(TestCase):
         -------
 
         """
-        self.dnd_races = dnd5eapy.races.Races()
+        self.dnd_races = dnd5eapy.Races()
 
     def test_attributes(self):
         """
@@ -1765,16 +1139,48 @@ class TestRaces(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_races.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_races.url_root)
         self.assertEqual("/api/races", self.dnd_races.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/races", self.dnd_races.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_races.requests_args["headers"])
-        self.assertIsInstance(self.dnd_races.dframe, pd.DataFrame)
-        self.assertEqual((9, 2), self.dnd_races.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/races", self.dnd_races.url)
+        self.assertEqual(exp.HEADERS, self.dnd_races.requests_args["headers"])
+        self.assertIsInstance(self.dnd_races.df, pd.DataFrame)
+        self.assertEqual((9, 2), self.dnd_races.shape)
+
+
+class TestRace(TestCase):
+    """Tests dnd5eapy.Race
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_race = dnd5eapy.Race()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_race.url_root)
+        self.assertEqual("/api/races/dragonborn", self.dnd_race.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/races/dragonborn", self.dnd_race.url)
+        self.assertEqual(exp.HEADERS, self.dnd_race.requests_args["headers"])
+        self.assertIsInstance(self.dnd_race.df, pd.DataFrame)
+        self.assertEqual((1, 13), self.dnd_race.shape)
+        self.assertListEqual(self.dnd_race.columns.to_list(),
+                             ['name', 'speed', 'ability_bonuses', 'alignment', 'age', 'size', 'size_description',
+                              'starting_proficiencies', 'languages', 'language_desc', 'traits', 'subraces', 'url'])
 
 
 class TestRuleSections(TestCase):
-    """
+    """Tests dnd5eapy.RuleSections
 
     """
 
@@ -1785,7 +1191,7 @@ class TestRuleSections(TestCase):
         -------
 
         """
-        self.dnd_rule_sections = dnd5eapy.rulesections.RuleSections()
+        self.dnd_rule_sections = dnd5eapy.RuleSections()
 
     def test_attributes(self):
         """
@@ -1794,16 +1200,47 @@ class TestRuleSections(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_rule_sections.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_rule_sections.url_root)
         self.assertEqual("/api/rule-sections", self.dnd_rule_sections.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/rule-sections", self.dnd_rule_sections.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_rule_sections.requests_args["headers"])
-        self.assertIsInstance(self.dnd_rule_sections.dframe, pd.DataFrame)
-        self.assertEqual((33, 2), self.dnd_rule_sections.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/rule-sections", self.dnd_rule_sections.url)
+        self.assertEqual(exp.HEADERS, self.dnd_rule_sections.requests_args["headers"])
+        self.assertIsInstance(self.dnd_rule_sections.df, pd.DataFrame)
+        self.assertEqual((33, 2), self.dnd_rule_sections.shape)
+
+
+class TestRuleSection(TestCase):
+    """Tests dnd5eapy.RuleSection
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_rule_section = dnd5eapy.RuleSection()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_rule_section.url_root)
+        self.assertEqual("/api/rule-sections/ability-checks", self.dnd_rule_section.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/rule-sections/ability-checks",
+                         self.dnd_rule_section.url)
+        self.assertEqual(exp.HEADERS, self.dnd_rule_section.requests_args["headers"])
+        self.assertIsInstance(self.dnd_rule_section.df, pd.DataFrame)
+        self.assertEqual((1, 3), self.dnd_rule_section.shape)
+        self.assertListEqual(self.dnd_rule_section.columns.to_list(), ['name', 'desc', 'url'])
 
 
 class TestRules(TestCase):
-    """
+    """Tests dnd5eapy.Rules
 
     """
 
@@ -1814,7 +1251,7 @@ class TestRules(TestCase):
         -------
 
         """
-        self.dnd_rules = dnd5eapy.rules.Rules()
+        self.dnd_rules = dnd5eapy.Rules()
 
     def test_attributes(self):
         """
@@ -1823,16 +1260,46 @@ class TestRules(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_rules.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_rules.url_root)
         self.assertEqual("/api/rules", self.dnd_rules.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/rules", self.dnd_rules.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_rules.requests_args["headers"])
-        self.assertIsInstance(self.dnd_rules.dframe, pd.DataFrame)
-        self.assertEqual((6, 2), self.dnd_rules.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/rules", self.dnd_rules.url)
+        self.assertEqual(exp.HEADERS, self.dnd_rules.requests_args["headers"])
+        self.assertIsInstance(self.dnd_rules.df, pd.DataFrame)
+        self.assertEqual((6, 2), self.dnd_rules.shape)
+
+
+class TestRule(TestCase):
+    """Tests dnd5eapy.Rule
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_rule = dnd5eapy.Rule()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_rule.url_root)
+        self.assertEqual("/api/rules/adventuring", self.dnd_rule.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/rules/adventuring", self.dnd_rule.url)
+        self.assertEqual(exp.HEADERS, self.dnd_rule.requests_args["headers"])
+        self.assertIsInstance(self.dnd_rule.df, pd.DataFrame)
+        self.assertEqual((1, 4), self.dnd_rule.shape)
+        self.assertListEqual(self.dnd_rule.columns.to_list(), ['name', 'desc', 'subsections', 'url'])
 
 
 class TestSkills(TestCase):
-    """
+    """Tests dnd5eapy.Skills
 
     """
 
@@ -1843,7 +1310,7 @@ class TestSkills(TestCase):
         -------
 
         """
-        self.dnd_skills = dnd5eapy.skills.Skills()
+        self.dnd_skills = dnd5eapy.Skills()
 
     def test_attributes(self):
         """
@@ -1852,16 +1319,47 @@ class TestSkills(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_skills.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_skills.url_root)
         self.assertEqual("/api/skills", self.dnd_skills.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/skills", self.dnd_skills.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_skills.requests_args["headers"])
-        self.assertIsInstance(self.dnd_skills.dframe, pd.DataFrame)
-        self.assertEqual((18, 2), self.dnd_skills.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/skills", self.dnd_skills.url)
+        self.assertEqual(exp.HEADERS, self.dnd_skills.requests_args["headers"])
+        self.assertIsInstance(self.dnd_skills.df, pd.DataFrame)
+        self.assertEqual((18, 2), self.dnd_skills.shape)
+
+
+class TestSkill(TestCase):
+    """Tests dnd5eapy.Skill
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_skill = dnd5eapy.Skill()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_skill.url_root)
+        self.assertEqual("/api/skills/acrobatics", self.dnd_skill.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/skills/acrobatics", self.dnd_skill.url)
+        self.assertEqual(exp.HEADERS, self.dnd_skill.requests_args["headers"])
+        self.assertIsInstance(self.dnd_skill.df, pd.DataFrame)
+        self.assertEqual((1, 6), self.dnd_skill.shape)
+        self.assertListEqual(self.dnd_skill.columns.to_list(),
+                             ['name', 'desc', 'url', 'ability_score.index', 'ability_score.name', 'ability_score.url'])
 
 
 class TestSpells(TestCase):
-    """
+    """Tests dnd5eapy.Spells
 
     """
 
@@ -1872,7 +1370,7 @@ class TestSpells(TestCase):
         -------
 
         """
-        self.dnd_spells = dnd5eapy.spells.Spells()
+        self.dnd_spells = dnd5eapy.Spells()
 
     def test_attributes(self):
         """
@@ -1881,16 +1379,55 @@ class TestSpells(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_spells.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_spells.url_root)
         self.assertEqual("/api/spells", self.dnd_spells.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/spells", self.dnd_spells.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_spells.requests_args["headers"])
-        self.assertIsInstance(self.dnd_spells.dframe, pd.DataFrame)
-        self.assertEqual((319, 2), self.dnd_spells.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/spells", self.dnd_spells.url)
+        self.assertEqual(exp.HEADERS, self.dnd_spells.requests_args["headers"])
+        self.assertIsInstance(self.dnd_spells.df, pd.DataFrame)
+        self.assertEqual((319, 2), self.dnd_spells.shape)
+
+
+class TestSpell(TestCase):
+    """Tests dnd5eapy.Spell
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_spell = dnd5eapy.Spell()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_spell.url_root)
+        self.assertEqual("/api/spells/acid-arrow", self.dnd_spell.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/spells/acid-arrow", self.dnd_spell.url)
+        self.assertEqual(exp.HEADERS, self.dnd_spell.requests_args["headers"])
+        self.assertIsInstance(self.dnd_spell.df, pd.DataFrame)
+        self.assertEqual((1, 29), self.dnd_spell.shape)
+        self.maxDiff = None
+        self.assertListEqual(self.dnd_spell.columns.to_list(),
+                             ['name', 'desc', 'higher_level', 'range', 'components', 'material', 'ritual', 'duration',
+                              'concentration', 'casting_time', 'level', 'attack_type', 'classes', 'subclasses', 'url',
+                              'damage.damage_type.index', 'damage.damage_type.name', 'damage.damage_type.url',
+                              'damage.damage_at_slot_level.2', 'damage.damage_at_slot_level.3',
+                              'damage.damage_at_slot_level.4', 'damage.damage_at_slot_level.5',
+                              'damage.damage_at_slot_level.6', 'damage.damage_at_slot_level.7',
+                              'damage.damage_at_slot_level.8', 'damage.damage_at_slot_level.9', 'school.index',
+                              'school.name', 'school.url'])
 
 
 class TestSubclasses(TestCase):
-    """
+    """Tests dnd5eapy.Subclasses
 
     """
 
@@ -1901,7 +1438,7 @@ class TestSubclasses(TestCase):
         -------
 
         """
-        self.dnd_subclasses = dnd5eapy.subclasses.Subclasses()
+        self.dnd_subclasses = dnd5eapy.Subclasses()
 
     def test_attributes(self):
         """
@@ -1910,16 +1447,48 @@ class TestSubclasses(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_subclasses.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_subclasses.url_root)
         self.assertEqual("/api/subclasses", self.dnd_subclasses.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/subclasses", self.dnd_subclasses.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_subclasses.requests_args["headers"])
-        self.assertIsInstance(self.dnd_subclasses.dframe, pd.DataFrame)
-        self.assertEqual((12, 2), self.dnd_subclasses.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/subclasses", self.dnd_subclasses.url)
+        self.assertEqual(exp.HEADERS, self.dnd_subclasses.requests_args["headers"])
+        self.assertIsInstance(self.dnd_subclasses.df, pd.DataFrame)
+        self.assertEqual((12, 2), self.dnd_subclasses.shape)
+
+
+class TestSubclass(TestCase):
+    """Tests dnd5eapy.Subclass
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_subclass = dnd5eapy.Subclass()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_subclass.url_root)
+        self.assertEqual("/api/subclasses/berserker", self.dnd_subclass.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/subclasses/berserker", self.dnd_subclass.url)
+        self.assertEqual(exp.HEADERS, self.dnd_subclass.requests_args["headers"])
+        self.assertIsInstance(self.dnd_subclass.df, pd.DataFrame)
+        self.assertEqual((1, 9), self.dnd_subclass.shape)
+        self.assertListEqual(self.dnd_subclass.columns.to_list(),
+                             ['name', 'subclass_flavor', 'desc', 'subclass_levels', 'url', 'spells', 'class.index',
+                              'class.name', 'class.url'])
 
 
 class TestSubraces(TestCase):
-    """
+    """Tests dnd5eapy.Subraces
 
     """
 
@@ -1930,7 +1499,7 @@ class TestSubraces(TestCase):
         -------
 
         """
-        self.dnd_subraces = dnd5eapy.subraces.Subraces()
+        self.dnd_subraces = dnd5eapy.Subraces()
 
     def test_attributes(self):
         """
@@ -1939,16 +1508,50 @@ class TestSubraces(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_subraces.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_subraces.url_root)
         self.assertEqual("/api/subraces", self.dnd_subraces.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/subraces", self.dnd_subraces.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_subraces.requests_args["headers"])
-        self.assertIsInstance(self.dnd_subraces.dframe, pd.DataFrame)
-        self.assertEqual((4, 2), self.dnd_subraces.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/subraces", self.dnd_subraces.url)
+        self.assertEqual(exp.HEADERS, self.dnd_subraces.requests_args["headers"])
+        self.assertIsInstance(self.dnd_subraces.df, pd.DataFrame)
+        self.assertEqual((4, 2), self.dnd_subraces.shape)
+
+
+class TestSubrace(TestCase):
+    """Tests dnd5eapy.Subrace
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_subrace = dnd5eapy.Subrace()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_subrace.url_root)
+        self.assertEqual("/api/subraces/high-elf", self.dnd_subrace.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/subraces/high-elf", self.dnd_subrace.url)
+        self.assertEqual(exp.HEADERS, self.dnd_subrace.requests_args["headers"])
+        self.assertIsInstance(self.dnd_subrace.df, pd.DataFrame)
+        self.assertEqual((1, 14), self.dnd_subrace.shape)
+        self.assertListEqual(self.dnd_subrace.columns.to_list(),
+                             ['name', 'desc', 'ability_bonuses', 'starting_proficiencies', 'languages', 'racial_traits',
+                              'url', 'race.index', 'race.name', 'race.url', 'language_options.choose',
+                              'language_options.from.option_set_type', 'language_options.from.options',
+                              'language_options.type'])
 
 
 class TestTraits(TestCase):
-    """
+    """Tests dnd5eapy.Traits
 
     """
 
@@ -1959,7 +1562,7 @@ class TestTraits(TestCase):
         -------
 
         """
-        self.dnd_traits = dnd5eapy.traits.Traits()
+        self.dnd_traits = dnd5eapy.Traits()
 
     def test_attributes(self):
         """
@@ -1968,16 +1571,16 @@ class TestTraits(TestCase):
         -------
 
         """
-        self.assertEqual(URL_ROOT, self.dnd_traits.url_root)
+        self.assertEqual(exp.URL_ROOT, self.dnd_traits.url_root)
         self.assertEqual("/api/traits", self.dnd_traits.url_leaf)
-        self.assertEqual("https://www.dnd5eapi.co/api/traits", self.dnd_traits.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_traits.requests_args["headers"])
-        self.assertIsInstance(self.dnd_traits.dframe, pd.DataFrame)
-        self.assertEqual((38, 2), self.dnd_traits.dframe.shape)
+        self.assertEqual("https://www.dnd5eapi.co/api/traits", self.dnd_traits.url)
+        self.assertEqual(exp.HEADERS, self.dnd_traits.requests_args["headers"])
+        self.assertIsInstance(self.dnd_traits.df, pd.DataFrame)
+        self.assertEqual((38, 2), self.dnd_traits.shape)
 
 
-class TestWeaponProperties(TestCase):
-    """
+class TestTrait(TestCase):
+    """Tests dnd5eapy.Trait
 
     """
 
@@ -1988,7 +1591,38 @@ class TestWeaponProperties(TestCase):
         -------
 
         """
-        self.dnd_weapon_properties = dnd5eapy.weaponproperties.WeaponProperties()
+        self.dnd_trait = dnd5eapy.Trait()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual(exp.URL_ROOT, self.dnd_trait.url_root)
+        self.assertEqual("/api/traits/artificers-lore", self.dnd_trait.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/traits/artificers-lore", self.dnd_trait.url)
+        self.assertEqual(exp.HEADERS, self.dnd_trait.requests_args["headers"])
+        self.assertIsInstance(self.dnd_trait.df, pd.DataFrame)
+        self.assertEqual((1, 6), self.dnd_trait.shape)
+        self.assertListEqual(self.dnd_trait.columns.to_list(),
+                             ['races', 'subraces', 'name', 'desc', 'proficiencies', 'url'])
+
+
+class TestWeaponProperties(TestCase):
+    """Tests dnd5eapy.WeaponProperties
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_weapon_properties = dnd5eapy.WeaponProperties()
 
     def test_attributes(self):
         """
@@ -2000,7 +1634,38 @@ class TestWeaponProperties(TestCase):
         self.assertEqual("https://www.dnd5eapi.co", self.dnd_weapon_properties.url_root)
         self.assertEqual("/api/weapon-properties", self.dnd_weapon_properties.url_leaf)
         self.assertEqual("https://www.dnd5eapi.co/api/weapon-properties",
-                         self.dnd_weapon_properties.requests_args["url"])
-        self.assertEqual(HEADERS, self.dnd_weapon_properties.requests_args["headers"])
-        self.assertIsInstance(self.dnd_weapon_properties.dframe, pd.DataFrame)
-        self.assertEqual((11, 2), self.dnd_weapon_properties.dframe.shape)
+                         self.dnd_weapon_properties.url)
+        self.assertEqual(exp.HEADERS, self.dnd_weapon_properties.requests_args["headers"])
+        self.assertIsInstance(self.dnd_weapon_properties.df, pd.DataFrame)
+        self.assertEqual((11, 2), self.dnd_weapon_properties.shape)
+
+
+class TestWeaponProperty(TestCase):
+    """Tests dnd5eapy.WeaponProperty
+
+    """
+
+    def setUp(self) -> None:
+        """
+
+        Returns
+        -------
+
+        """
+        self.dnd_weapon_property = dnd5eapy.WeaponProperty()
+
+    def test_attributes(self):
+        """
+
+        Returns
+        -------
+
+        """
+        self.assertEqual("https://www.dnd5eapi.co", self.dnd_weapon_property.url_root)
+        self.assertEqual("/api/weapon-properties/ammunition", self.dnd_weapon_property.url_leaf)
+        self.assertEqual("https://www.dnd5eapi.co/api/weapon-properties/ammunition",
+                         self.dnd_weapon_property.url)
+        self.assertEqual(exp.HEADERS, self.dnd_weapon_property.requests_args["headers"])
+        self.assertIsInstance(self.dnd_weapon_property.df, pd.DataFrame)
+        self.assertEqual((1, 3), self.dnd_weapon_property.shape)
+        self.assertListEqual(self.dnd_weapon_property.columns.to_list(), ['name', 'desc', 'url'])

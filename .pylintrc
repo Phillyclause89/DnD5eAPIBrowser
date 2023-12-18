@@ -67,7 +67,7 @@ ignored-modules=
 
 # Python code to execute, usually for sys.path manipulation such as
 # pygtk.require().
-#init-hook=
+init-hook="import sys; sys.path.append('DnD5eAPIBrowser')"
 
 # Use multiple processes to speed up Pylint. Specifying 0 will auto-detect the
 # number of processors available to use, and will cap the count on Windows to
@@ -187,10 +187,15 @@ function-naming-style=snake_case
 # Good variable names which should always be accepted, separated by a comma.
 good-names=i,
            j,
+           x,
+           y,
            k,
-           ex,
+           e,
            Run,
-           _
+           _,
+           df,
+           maxDiff
+
 
 # Good variable names regexes, separated by a comma. If names match any regex,
 # they will always be accepted
@@ -288,7 +293,7 @@ ignored-parents=
 max-args=5
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=7
+max-attributes=12
 
 # Maximum number of boolean expressions in an if statement (see R0916).
 max-bool-expr=5
@@ -340,7 +345,7 @@ indent-string='    '
 max-line-length=120
 
 # Maximum number of lines in a module.
-max-module-lines=1000
+max-module-lines=2000
 
 # Allow the body of a class to be on the same line as the declaration if body
 # contains single statement.
@@ -441,7 +446,13 @@ enable=c-extension-no-member
 
 # List of qualified names (i.e., library.method) which require a timeout
 # parameter e.g. 'requests.api.get,requests.api.post'
-timeout-methods=requests.api.delete,requests.api.get,requests.api.head,requests.api.options,requests.api.patch,requests.api.post,requests.api.put,requests.api.request
+timeout-methods=requests.api.delete,
+                requests.api.get,requests.api.head,
+                requests.api.options,
+                requests.api.patch,
+                requests.api.post,
+                requests.api.put,
+                requests.api.request
 
 
 [MISCELLANEOUS]

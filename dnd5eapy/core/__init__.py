@@ -29,11 +29,11 @@ from _warnings import warn
 import numpy as np
 
 try:
-    from typing import Any, Dict, Iterable, Iterator, List, Self, Set, Type, Union
+    from typing import Any, Dict, Iterable, Iterator, List, Self, Set, Type, Union, Tuple
 except ImportError as i_error:
     warn(f"{i_error}", ImportWarning)
     from typing_extensions import Self
-    from typing import Any, Dict, Iterator, List, Type, Union, Set
+    from typing import Any, Dict, Iterator, List, Type, Union, Set, Tuple
 
 import pandas as pd
 import requests
@@ -53,41 +53,142 @@ class DnD5eAPIObj:
 
     Attributes
     ----------
-    dframe: pandas.DataFrame
-        DataFrame representation of the `json` object returned by `DnD5eAPIObj.__get_df__()`.
-    response: requests.Response
-        The `response` object returned by `DnD5eAPIObj.__get_response__()`.
+    df: pandas.DataFrame
+        A DataFrame representation of the `json` object returned by `DnD5eAPIObj.__get_df__()`.
+    leaf_constructors: Dict[str, Type[Self]]
+        Dictionary of all dnd5eapy class constructors mapped to their default url_leaf attribute.
     url_root: str
         The api server root of the `url`.
     url_leaf: str
         The api function path of the `url`.
-    headers: Dict[str, str]
-        The headers used in the api request.
+    requests_args: Dict[str, Union[Dict[str, str], Dict[str, Dict[str, str]]]]
+        The keys are 'headers', 'url' and 'timeout'
+    response: requests.Response
+        The `response` object returned by `DnD5eAPIObj.__get_response__()`.
+
     """
     leaf_constructors: Dict[str, Type[Self]]
     url_root: str = "https://www.dnd5eapi.co"
     url_leaf: str = "/api"
     requests_args: Dict[str, Union[Dict[str, str], Dict[str, Dict[str, str]]]]
-    dframe: pd.DataFrame = pd.DataFrame(columns=["name", "url"])
-    columns: pd.Index = dframe.columns
     response: requests.Response = requests.Response()
+    df: pd.DataFrame = pd.DataFrame(columns=["status_code", "name", "url"])
 
     def __init__(self, url_leaf: str = url_leaf, url_root: str = url_root,
                  headers: Dict[str, str] = None, timeout=None) -> None:
         """Constructs the `DnD5eAPIObj` instance
         """
+
         self.url_leaf = url_leaf
         self.url_root = url_root
         self.requests_args = {
             'headers': {'Accept': 'application/json'} if headers is None else headers,
-            'url': f"{self.url_root}{self.url_leaf}",
-            "timeout": timeout
+            'url': self.url,
+            'timeout': timeout
         }
-        self.timeout = timeout
         self.leaf_constructors = get_leaf_constructor_map()
         self.response = self.__get_response__()
-        self.dframe = self.get_df_from_json()
-        self.columns = self.dframe.columns
+        self.df = self.get_df_from_json()
+
+    @property
+    def url(self) -> str:
+        """f"{self.url_root}{self.url_leaf}"
+
+        Returns
+        -------
+        str
+        """
+        return f"{self.url_root}{self.url_leaf}"
+
+    @property
+    def empty(self) -> bool:
+        """self.df.empty
+
+        Returns
+        -------
+        bool
+        """
+        return self.df.empty
+
+    @property
+    def shape(self) -> Tuple[int, int]:
+        """self.df.shape
+
+        Returns
+        -------
+        Tuple[int, int]
+        """
+        return self.df.shape
+
+    @property
+    def size(self) -> int:
+        """self.df.size
+
+        Returns
+        -------
+        int
+        """
+        return self.df.size
+
+    @property
+    def ndim(self) -> int:
+        """self.df.ndim
+
+        Returns
+        -------
+        int
+        """
+        return self.df.ndim
+
+    @property
+    def axes(self) -> List:
+        """self.df.axes
+
+        Returns
+        -------
+        List
+        """
+        return self.df.axes
+
+    @property
+    def values(self) -> np.ndarray:
+        """self.df.values
+
+        Returns
+        -------
+        numpy.ndarray
+        """
+        return self.df.values
+
+    @property
+    def dtypes(self) -> pd.Series:
+        """self.df.dtypes
+
+        Returns
+        -------
+        pandas.Series
+        """
+        return self.df.dtypes
+
+    @property
+    def columns(self) -> pd.Index:
+        """self.df.columns
+
+        Returns
+        -------
+        pandas.Index
+        """
+        return self.df.columns
+
+    @property
+    def index(self) -> pd.Index:
+        """self.df.index
+
+        Returns
+        -------
+        pandas.Index
+        """
+        return self.df.index
 
     def refresh(self) -> None:
         """Updates the `DnD5eAPIObj` instance with a new api request.
@@ -99,8 +200,7 @@ class DnD5eAPIObj:
         None
         """
         self.response = self.__get_response__()
-        self.dframe = self.get_df_from_json()
-        self.columns = self.dframe.columns
+        self.df = self.get_df_from_json()
 
     def create_instances_from_nested_urls(self) -> None:
         """
@@ -110,7 +210,7 @@ class DnD5eAPIObj:
         """
 
     def create_instances_from_urls(self) -> None:
-        """Attempts to update api urls in the `dframe` with initialized `DnD5eAPIObj` objects.
+        """Attempts to update api urls in the `df` with initialized `DnD5eAPIObj` objects.
 
         Returns
         -------
@@ -118,16 +218,16 @@ class DnD5eAPIObj:
 
         Notes
         -----
-        Basically self.dframe["url"].apply(self.create_instance_from_url)
+        Basically self.df["url"].apply(self.create_instance_from_url)
         """
         _error: KeyError
         _warn_m: str
         try:
-            self.dframe["obj"] = self.dframe["url"].apply(self.create_instance_from_url)
+            self.df["obj"] = self.df["url"].apply(self.create_instance_from_url)
         except KeyError as _error:
             if _error.args[0] == "url":
                 _warn_m = (f"INVALID RESPONSE STATUS CODE\nThe "
-                           f"DataFrame does not contain a 'url' column:\n{self.dframe.columns}")
+                           f"DataFrame does not contain a 'url' column:\n{self.df.columns}")
                 warn(_warn_m, ResourceWarning, stacklevel=2)
                 return
             raise _error
@@ -202,18 +302,16 @@ class DnD5eAPIObj:
         -------
         DataFrame
         """
-        return self.dframe.__eq__(other)
+        return self.df.__eq__(other)
 
-    def __bool__(self) -> Union[bool, ValueError]:
-        """
+    def __bool__(self) -> bool:
+        """Returns True if
 
         Returns
         -------
-        Union[bool, ValueError]
+        bool
         """
-        if self.dframe.columns[0] == "status_code":
-            return False
-        return self.dframe.__bool__()
+        return self.columns[0] != "status_code"
 
     def __str__(self) -> str:
         """Returns self.__repr__().replace(" at ", f" from {self.response.url} at ")
@@ -226,13 +324,13 @@ class DnD5eAPIObj:
         return self.__repr__().replace(" at ", f" from {self.response.url} at ")
 
     def __get_df__(self) -> pd.DataFrame:
-        """gets the `dframe` from `json`.
+        """gets the `df` from `json`.
             If the keys `'count'` and `'results'` are in `json.keys()` then
-            the initial DataFrame will be `dframe = pd.DataFrame(json.get('results'))`,
-            otherwise `dframe = pd.DataFrame([self.json])` will be initialized.
+            the initial DataFrame will be `df = pd.DataFrame(json.get('results'))`,
+            otherwise `df = pd.DataFrame([self.json])` will be initialized.
 
-            If the key `'index'` is in `dframe.columns` then the final DataFrame returned
-            will be indexed by that key's value(s) (i.e. `return dframe.set_index('index')`).
+            If the key `'index'` is in `df.columns` then the final DataFrame returned
+            will be indexed by that key's value(s) (i.e. `return df.set_index('index')`).
 
             Results of `__get_df__` method calls are dependent on the `json` attribute.
 
@@ -291,7 +389,7 @@ class DnD5eAPIObj:
         return _df
 
     def __getitem__(self, item: Union[str, pd.Series]) -> Union[pd.Series, pd.DataFrame]:
-        """Invokes self.dframe.__getitem__(item)
+        """Invokes self.df.__getitem__(item)
 
         Parameters
         ----------
@@ -301,19 +399,19 @@ class DnD5eAPIObj:
         -------
         Union[pandas.core.series.Series, pandas.core.frame.DataFrame]
         """
-        return self.dframe.__getitem__(item)
+        return self.df.__getitem__(item)
 
     def __len__(self) -> int:
-        """Invokes self.dframe.__len__()
+        """Invokes self.df.__len__()
 
         Returns
         -------
         int
         """
-        return self.dframe.__len__()
+        return self.df.__len__()
 
     def __setitem__(self, key: str, value: pd.Series) -> None:
-        """Invokes self.dframe.__setitem__(key, value)
+        """Invokes self.df.__setitem__(key, value)
 
         Parameters
         ----------
@@ -324,10 +422,10 @@ class DnD5eAPIObj:
         -------
         None
         """
-        return self.dframe.__setitem__(key, value)
+        return self.df.__setitem__(key, value)
 
     def __contains__(self, item: Any) -> bool:
-        """self.dframe.__contains__(item)
+        """self.df.__contains__(item)
 
         Parameters
         ----------
@@ -338,17 +436,17 @@ class DnD5eAPIObj:
         bool
 
         """
-        return self.dframe.__contains__(item)
+        return self.df.__contains__(item)
 
     def __iter__(self) -> Iterator:
-        """self.dframe.__iter__()
+        """self.df.__iter__()
 
         Returns
         -------
         Any
 
         """
-        return self.dframe.__iter__()
+        return self.df.__iter__()
 
     def __add__(self, other: Any) -> pd.DataFrame:
         """
@@ -362,7 +460,7 @@ class DnD5eAPIObj:
         pd.DataFrame
 
         """
-        return self.dframe.__add__(other)
+        return self.df.__add__(other)
 
     def __sub__(self, other: Any) -> pd.DataFrame:
         """
@@ -376,7 +474,7 @@ class DnD5eAPIObj:
         pd.DataFrame
 
         """
-        return self.dframe.__sub__(other)
+        return self.df.__sub__(other)
 
     def __mul__(self, other: Any) -> pd.DataFrame:
         """
@@ -390,7 +488,7 @@ class DnD5eAPIObj:
         pd.DataFrame
 
         """
-        return self.dframe.__mul__(other)
+        return self.df.__mul__(other)
 
     def __truediv__(self, other: Any) -> pd.DataFrame:
         """
@@ -403,7 +501,7 @@ class DnD5eAPIObj:
         -------
         pd.DataFrame
         """
-        return self.dframe.__truediv__(other)
+        return self.df.__truediv__(other)
 
     def __pow__(self, power: Any, modulo: object = None) -> pd.DataFrame:
         """
@@ -418,7 +516,7 @@ class DnD5eAPIObj:
         pd.DataFrame
 
         """
-        return self.dframe.__pow__(power, modulo)
+        return self.df.__pow__(power, modulo)
 
 
 def get_leaf_constructor_map(root_class: Type[DnD5eAPIObj] = DnD5eAPIObj) -> Dict[str, Type[Union[DnD5eAPIObj, Any]]]:
@@ -435,7 +533,7 @@ def get_leaf_constructor_map(root_class: Type[DnD5eAPIObj] = DnD5eAPIObj) -> Dic
 
         Parameters
         ----------
-        cls : Type[DnD5eAPIObj]
+        cls : type
 
         Returns
         -------
