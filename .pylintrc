@@ -290,10 +290,10 @@ exclude-too-few-public-methods=
 ignored-parents=
 
 # Maximum number of arguments for function / method.
-max-args=5
+max-args=16
 
 # Maximum number of attributes for a class (see R0902).
-max-attributes=12
+max-attributes=24
 
 # Maximum number of boolean expressions in an if statement (see R0916).
 max-bool-expr=5
@@ -308,7 +308,7 @@ max-locals=15
 max-parents=7
 
 # Maximum number of public methods for a class (see R0904).
-max-public-methods=20
+max-public-methods=24
 
 # Maximum number of return / yield for function / method body.
 max-returns=6

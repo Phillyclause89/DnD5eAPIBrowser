@@ -26,7 +26,9 @@ GOOD_BASE_RESPONSE: Dict[str, str] = {'ability-scores': '/api/ability-scores',
                                       'subraces': '/api/subraces',
                                       'traits': '/api/traits',
                                       'weapon-properties': '/api/weapon-properties'}
-BAD_404_RESPONSE: Dict[str, int] = {'status_code': 404}
+BAD_404_RESPONSE: Dict[str, int] = {'name': '/api/Bad_Leaf_69_420',
+                                    'status_code': 404,
+                                    'url': '/api/Bad_Leaf_69_420'}
 ABILITY_SCORES_RESPONSE: Dict[str, Union[int, List[
     Union[Dict[str, str], Dict[str, str], Dict[str, str],
           Dict[str, str], Dict[str, str], Dict[str, str]]]]] = {

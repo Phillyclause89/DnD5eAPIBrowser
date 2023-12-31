@@ -94,7 +94,7 @@ class BigScreen:
         self.menu_bar.add_command(label="Toggle Fullscreen (Esc)", font=self.font, command=self.full_screen_toggle)
         # Shitty-ness of this app is largely due to the df.apply call here
         # Todo: make fetching images less shitty
-        self.current_dnd["images"] = self.current_dnd["url"].apply(self.get_images)
+        self.current_dnd["images"] = self.current_dnd["url_full"].apply(self.get_images)
         self.menu_bar.add_command(label="Roll New Font (SHIFT + f)", font=self.font,
                                   command=lambda: self.loading_guard(self.roll_font_click))
         self.menu_bar.add_command(label="Back (BackSpace)", font=self.font,
@@ -215,7 +215,7 @@ class BigScreen:
         self.loading_update(f"Fetching images for {self.current_dnd}")
         self.current_dnd["images"] = self.current_dnd["images"] if "images" in self.dnds[
             -1
-        ].df.columns else self.current_dnd["url"].apply(self.get_images)
+        ].df.columns else self.current_dnd["url_full"].apply(self.get_images)
         self.loading_update(f"Generating buttons for {self.current_dnd}")
         self.butts = self.generate_butts()
         self.place_buttons_and_text()
@@ -276,7 +276,7 @@ class BigScreen:
         for butt in self.butts:
             self.loading_update(f"Building {butt}")
             butt_row_items: Union[Union[Series, DataFrame, None, NDFrame], Any]
-            butt_row_items = self.current_dnd[self.current_dnd['url'] == butt._name]
+            butt_row_items = self.current_dnd[self.current_dnd['url_full'] == butt._name]
             self.canvas.create_window(self.screenwidth // 12, y, anchor="n", window=butt)
             self.canvas.create_text(
                 self.screenwidth // 3, y,
@@ -410,7 +410,7 @@ class BigScreen:
 
         """
         butts = []
-        for i, url in zip(self.current_dnd.df.index, self.current_dnd["url"]):
+        for i, url in zip(self.current_dnd.index, self.current_dnd["url_full"]):
             self.root.update()
             butts.append(tk.Button(
                 self.canvas,
@@ -479,7 +479,7 @@ class BigScreen:
         term = "+".join(url_leaf.split("/")[2:]).replace("-", "+")
         self.loading_update(f"Searching google images for Dungeons+and+Dragons+{term}")
         headers = {
-            'url': f"https://www.google.co.in/search?site=imghp&q=Dungeons+and+Dragons+{term}&tbs=il:cl&tbm=isch",
+            'url_full': f"https://www.google.co.in/search?site=imghp&q=Dungeons+and+Dragons+{term}&tbs=il:cl&tbm=isch",
             'headers': {'User-Agent': "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) "
                                       "Chrome/43.0.2357.134 Safari/537.36 "},
             "timeout": self.current_dnd.requests_args["timeout"]
