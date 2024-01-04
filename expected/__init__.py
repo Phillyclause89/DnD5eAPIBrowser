@@ -982,3 +982,6 @@ WEAPON_PROPERTIES_RESPONSE: Dict[str, Union[int, List[
           'name': 'Versatile',
           'url': '/api/weapon-properties/versatile'}]}
 _RESPONSE: None = None
+NEW_NAME_COLUMN_NAME = "D&D Name"
+NEW_URL_COLUMN_NAME = "Uniform Resource Locator"
+NEW_OBJ_COLUMN_NAME = "D&D Object"

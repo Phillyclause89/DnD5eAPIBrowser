@@ -25,16 +25,14 @@
 """
 from typing import Any, Dict, Type, Union
 from unittest import TestCase
+
+import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from pandas import DataFrame
 
 import dnd5eapy
 import expected as exp
-
-NEW_NAME_COLUMN_NAME = "D&D Name"
-NEW_URL_COLUMN_NAME = "Uniform Resource Locator"
-NEW_OBJ_COLUMN_NAME = "D&D Object"
 
 
 class TestDnD5eAPIObj(TestCase):
@@ -98,36 +96,6 @@ class TestDnD5eAPIObj(TestCase):
         self.assertIsInstance(self.bad_dnd.df, pd.DataFrame)
 
         # TODO Refactor into property test methods
-        self.assertEqual((24, 2), self.dnd.shape)
-        self.assertIsInstance(self.dnd.url_column, pd.Series)
-        self.assertIsInstance(self.dnd.name_column, pd.Series)
-        self.assertRaises(RuntimeError, lambda: self.dnd.obj_column)
-        self.assertEqual(48, self.dnd.size)
-
-        self.maxDiff = None
-        self.assertEqual(24, len(self.dnd.values))
-        self.assertIsInstance(self.dnd.index, pd.Index)
-        self.assertEqual(2, self.dnd.ndim)
-        self.dnd.obj_column = self.dnd.url_column.rename("obj") * 0
-        self.assertEqual((24, 3), self.dnd.shape)
-        self.assertListEqual(['name', 'url', 'obj'], list(self.dnd.columns))
-        self.dnd.obj_column = self.dnd.obj_column.rename(3)
-        self.dnd.url_column = self.dnd.obj_column.rename(2)
-        self.dnd.name_column = self.dnd.obj_column.rename(1)
-        self.assertListEqual([1, 2, 3], list(self.dnd.columns))
-        self.assertTrue((self.dnd == "").all().all())
-        self.dnd.df = self.dnd.dframe
-        self.assertTrue((self.dnd != "").all().all())
-
-        self.assertEqual((1, 3), self.bad_dnd.shape)
-        self.assertIsInstance(self.bad_dnd.url_column, pd.Series)
-        self.assertIsInstance(self.bad_dnd.name_column, pd.Series)
-        self.assertEqual(3, self.bad_dnd.size)
-
-        self.maxDiff = None
-        self.assertEqual(1, len(self.bad_dnd.values))
-        self.assertIsInstance(self.bad_dnd.index, pd.Index)
-        self.assertEqual(2, self.bad_dnd.ndim)
 
     def test_url_full(self):
         """tests url_full property
@@ -179,33 +147,13 @@ class TestDnD5eAPIObj(TestCase):
         self.assertListEqual(['status_code', 'name', 'url'], list(self.bad_dnd.columns))
         self.assertRaises(TypeError, invalid_type_assignment)
         self.assertRaises(ValueError, invalid_value_assignment)
-        self.dnd.columns = [NEW_NAME_COLUMN_NAME, NEW_URL_COLUMN_NAME]
-        self.assertListEqual([NEW_NAME_COLUMN_NAME, NEW_URL_COLUMN_NAME], list(self.dnd.columns))
-        self.assertEqual(NEW_NAME_COLUMN_NAME, self.dnd.name_column_name)
-        self.assertEqual(NEW_URL_COLUMN_NAME, self.dnd.url_column_name)
+        self.dnd.columns = [exp.NEW_NAME_COLUMN_NAME, exp.NEW_URL_COLUMN_NAME]
+        self.assertListEqual([exp.NEW_NAME_COLUMN_NAME, exp.NEW_URL_COLUMN_NAME], list(self.dnd.columns))
+        self.assertEqual(exp.NEW_NAME_COLUMN_NAME, self.dnd.name_column_name)
+        self.assertEqual(exp.NEW_URL_COLUMN_NAME, self.dnd.url_column_name)
         self.assertEqual("obj", self.dnd.obj_column_name)
 
-    def test_obj_column_name(self):
-        """tests obj_column_name property
-
-        Returns
-        -------
-        None
-        """
-        # Good D&D Tests
-        self.assertEqual("obj", self.dnd.obj_column_name)
-        self.assertNotIn(self.dnd.obj_column_name, self.dnd.columns)
-        self.dnd.obj_column_name = NEW_OBJ_COLUMN_NAME
-        self.assertEqual(NEW_OBJ_COLUMN_NAME, self.dnd.obj_column_name)
-        self.assertNotIn(self.dnd.obj_column_name, self.dnd.columns)
-        # Bad D&D Tests
-        self.assertEqual("obj", self.bad_dnd.obj_column_name)
-        self.assertNotIn(self.bad_dnd.obj_column_name, self.bad_dnd.columns)
-        self.bad_dnd.obj_column_name = NEW_OBJ_COLUMN_NAME
-        self.assertEqual(NEW_OBJ_COLUMN_NAME, self.bad_dnd.obj_column_name)
-        self.assertNotIn(self.bad_dnd.obj_column_name, self.bad_dnd.columns)
-
-    def test_url_column_name(self):
+    def test_url_column_name(self) -> None:
         """tests url_column_name property
 
         Returns
@@ -215,15 +163,31 @@ class TestDnD5eAPIObj(TestCase):
         # Good D&D Tests
         self.assertEqual("url", self.dnd.url_column_name)
         self.assertIn(self.dnd.url_column_name, self.dnd.columns)
-        self.dnd.url_column_name = NEW_URL_COLUMN_NAME
-        self.assertEqual(NEW_URL_COLUMN_NAME, self.dnd.url_column_name)
+        self.dnd.url_column_name = exp.NEW_URL_COLUMN_NAME
+        self.assertEqual(exp.NEW_URL_COLUMN_NAME, self.dnd.url_column_name)
         self.assertIn(self.dnd.url_column_name, self.dnd.columns)
         # Bad D&D Tests
         self.assertEqual("url", self.bad_dnd.url_column_name)
         self.assertIn(self.bad_dnd.url_column_name, self.bad_dnd.columns)
-        self.bad_dnd.url_column_name = NEW_URL_COLUMN_NAME
-        self.assertEqual(NEW_URL_COLUMN_NAME, self.bad_dnd.url_column_name)
+        self.bad_dnd.url_column_name = exp.NEW_URL_COLUMN_NAME
+        self.assertEqual(exp.NEW_URL_COLUMN_NAME, self.bad_dnd.url_column_name)
         self.assertIn(self.bad_dnd.url_column_name, self.bad_dnd.columns)
+
+    def test_url_column(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
+        self.assertIsInstance(self.dnd.url_column, pd.Series)
+        self.assertIsInstance(self.bad_dnd.url_column, pd.Series)
+        self.assertEqual('url', self.dnd.url_column.name)
+        self.assertTrue(self.dnd.url_column.all())
+        self.dnd.url_column = self.dnd.url_column.rename(exp.NEW_URL_COLUMN_NAME) * 0
+        self.assertEqual(exp.NEW_URL_COLUMN_NAME, self.dnd.url_column_name)
+        self.assertListEqual(['name', exp.NEW_URL_COLUMN_NAME], list(self.dnd.columns))
+        self.assertFalse(self.dnd.url_column.all())
 
     def test_name_column_name(self):
         """tests name_column_name property
@@ -235,15 +199,157 @@ class TestDnD5eAPIObj(TestCase):
         # Good D&D Tests
         self.assertEqual("name", self.dnd.name_column_name)
         self.assertIn(self.dnd.name_column_name, self.dnd.columns)
-        self.dnd.name_column_name = NEW_NAME_COLUMN_NAME
-        self.assertEqual(NEW_NAME_COLUMN_NAME, self.dnd.name_column_name)
+        self.dnd.name_column_name = exp.NEW_NAME_COLUMN_NAME
+        self.assertEqual(exp.NEW_NAME_COLUMN_NAME, self.dnd.name_column_name)
         self.assertIn(self.dnd.name_column_name, self.dnd.columns)
         # Bad D&D Tests
         self.assertEqual("name", self.bad_dnd.name_column_name)
         self.assertIn(self.bad_dnd.name_column_name, self.bad_dnd.columns)
-        self.bad_dnd.name_column_name = NEW_NAME_COLUMN_NAME
-        self.assertEqual(NEW_NAME_COLUMN_NAME, self.bad_dnd.name_column_name)
+        self.bad_dnd.name_column_name = exp.NEW_NAME_COLUMN_NAME
+        self.assertEqual(exp.NEW_NAME_COLUMN_NAME, self.bad_dnd.name_column_name)
         self.assertIn(self.bad_dnd.name_column_name, self.bad_dnd.columns)
+
+    def test_name_column(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
+        self.assertIsInstance(self.dnd.name_column, pd.Series)
+        self.assertIsInstance(self.bad_dnd.name_column, pd.Series)
+        self.assertEqual("name", self.dnd.name_column.name)
+        self.assertTrue(self.dnd.name_column.all())
+        self.dnd.name_column = self.dnd.name_column.rename(exp.NEW_NAME_COLUMN_NAME) * 0
+        self.assertEqual(exp.NEW_NAME_COLUMN_NAME, self.dnd.name_column_name)
+        self.assertListEqual([exp.NEW_NAME_COLUMN_NAME, "url"], list(self.dnd.columns))
+        self.assertFalse(self.dnd.name_column.all())
+
+    def test_obj_column_name(self):
+        """tests obj_column_name property
+
+        Returns
+        -------
+        None
+        """
+        # Good D&D Tests
+        self.assertEqual("obj", self.dnd.obj_column_name)
+        self.assertNotIn(self.dnd.obj_column_name, self.dnd.columns)
+        self.dnd.obj_column_name = exp.NEW_OBJ_COLUMN_NAME
+        self.assertEqual(exp.NEW_OBJ_COLUMN_NAME, self.dnd.obj_column_name)
+        self.assertNotIn(self.dnd.obj_column_name, self.dnd.columns)
+        # Bad D&D Tests
+        self.assertEqual("obj", self.bad_dnd.obj_column_name)
+        self.assertNotIn(self.bad_dnd.obj_column_name, self.bad_dnd.columns)
+        self.bad_dnd.obj_column_name = exp.NEW_OBJ_COLUMN_NAME
+        self.assertEqual(exp.NEW_OBJ_COLUMN_NAME, self.bad_dnd.obj_column_name)
+        self.assertNotIn(self.bad_dnd.obj_column_name, self.bad_dnd.columns)
+
+    def test_obj_column(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
+        self.assertRaises(RuntimeError, lambda: self.dnd.obj_column)
+        self.assertRaises(RuntimeError, lambda: self.bad_dnd.obj_column)
+        self.dnd.obj_column = self.dnd.name_column.rename(exp.NEW_OBJ_COLUMN_NAME) * 0
+        self.assertIsInstance(self.dnd.obj_column, pd.Series)
+        self.assertEqual(exp.NEW_OBJ_COLUMN_NAME, self.dnd.obj_column.name)
+        self.assertEqual(exp.NEW_OBJ_COLUMN_NAME, self.dnd.obj_column_name)
+        self.assertListEqual(["name", "url", exp.NEW_OBJ_COLUMN_NAME], list(self.dnd.columns))
+        self.assertFalse(self.dnd.obj_column.all())
+
+    def test_size(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
+        self.assertEqual(48, self.dnd.size)
+        self.dnd.obj_column = self.dnd.url_column.rename("obj") * 0
+        self.assertEqual(72, self.dnd.size)
+        self.assertEqual(3, self.bad_dnd.size)
+
+    def test_shape(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
+        self.assertEqual((24, 2), self.dnd.shape)
+        self.dnd.obj_column = self.dnd.url_column.rename("obj") * 0
+        self.assertEqual((24, 3), self.dnd.shape)
+        self.assertEqual((1, 3), self.bad_dnd.shape)
+
+    def test_index(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+
+        """
+        self.assertIsInstance(self.dnd.index, pd.Index)
+        self.assertEqual(self.dnd.index.name, "index")
+        self.assertIsInstance(self.bad_dnd.index, pd.RangeIndex)
+        self.assertEqual(24, len(self.dnd.index))
+        self.assertEqual(1, len(self.bad_dnd.index))
+
+    def test_ndim(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+
+        """
+        self.assertEqual(2, self.dnd.ndim)
+        self.assertEqual(2, self.bad_dnd.ndim)
+
+    def test_dtypes(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+
+        """
+        self.assertIsInstance(self.dnd.dtypes, pd.Series)
+        self.assertTrue((self.dnd.dtypes == "object").all())
+        self.dnd.df = self.dnd.df.convert_dtypes()
+        self.assertTrue((self.dnd.dtypes == "string").all())
+
+    def test_axes(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
+        self.assertListEqual([self.dnd.index, self.dnd.columns], self.dnd.axes)
+
+    def test_empty(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
+        self.assertFalse(self.dnd.empty)
+
+    def test_values(self) -> None:
+        """
+
+        Returns
+        -------
+        None
+        """
+        self.assertIsInstance(self.dnd.values, np.ndarray)
+        self.assertEqual(24, len(self.dnd.values))
 
     def test_parents(self) -> None:
         """
